@@ -1,0 +1,2598 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0c10">
+<meta name="color-scheme" content="dark">
+<meta name="description" content="100% 本地纯离线两步验证（TOTP）动态口令管理器，支持 Windows / Android / iOS 三端。">
+<title>两步验证密钥管理器 v3.0 Pro</title>
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="2FA验证器">
+
+<style>
+:root {
+  --bg-base: #0b0c10;
+  --bg-surface: #13151f;
+  --bg-surface-hover: #1a1d2b;
+  --bg-card: rgba(20, 23, 33, 0.82);
+  --bg-card-hover: rgba(26, 30, 44, 0.92);
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-highlight: rgba(255, 255, 255, 0.18);
+  --border-focus: #e58e3b;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --accent: #e58e3b;
+  --accent-soft: rgba(229, 142, 59, 0.15);
+  --accent-glow: rgba(229, 142, 59, 0.35);
+  --brand-google: #38bdf8;
+  --brand-google-soft: rgba(56, 189, 248, 0.15);
+  --brand-dev: #a78bfa;
+  --brand-dev-soft: rgba(167, 139, 250, 0.15);
+  --brand-ai: #34d399;
+  --brand-ai-soft: rgba(52, 211, 153, 0.15);
+  --brand-domain: #facc15;
+  --brand-domain-soft: rgba(250, 204, 21, 0.15);
+  --brand-cloud: #2dd4bf;
+  --brand-cloud-soft: rgba(45, 212, 191, 0.15);
+  --brand-fin: #c084fc;
+  --brand-fin-soft: rgba(192, 132, 252, 0.15);
+  --danger: #f87171;
+  --danger-soft: rgba(248, 113, 113, 0.15);
+  --success: #10b981;
+  --success-soft: rgba(16, 185, 129, 0.15);
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --shadow-card: 0 4px 20px -2px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --shadow-card-hover: 0 12px 32px -4px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  --shadow-btn: 0 2px 8px rgba(0, 0, 0, 0.25);
+  --transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: radial-gradient(circle at 50% 0%, #1a1c28 0%, #0b0c10 100%);
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display", "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", sans-serif;
+  min-height: 100vh;
+  padding-bottom: 70px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+.mono {
+  font-family: "Cascadia Code", "JetBrains Mono", Consolas, "Courier New", monospace;
+  font-feature-settings: "tnum" 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ================= 顶栏 Header ================= */
+header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(11, 12, 16, 0.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 12px 28px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.45);
+}
+
+.hdr-container {
+  max-width: 1440px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* 顶栏第一行：品牌信息 + 搜索 + 视图切换 */
+.hdr-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  user-select: none;
+}
+
+.brand .logo {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(229, 142, 59, 0.25), rgba(229, 142, 59, 0.05));
+  border: 1px solid rgba(229, 142, 59, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  box-shadow: 0 0 20px var(--accent-glow);
+  flex-shrink: 0;
+}
+
+.brand-text h1 {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.brand-text .badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid rgba(229, 142, 59, 0.3);
+  letter-spacing: 0.5px;
+}
+
+.brand-text .sub {
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--success);
+  display: inline-block;
+  box-shadow: 0 0 8px var(--success);
+  animation: pulse 2s infinite ease-in-out;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.85); }
+}
+
+.hdr-top-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.search-wrap {
+  position: relative;
+}
+
+.search-wrap input {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  border-radius: var(--radius-md);
+  padding: 8px 32px 8px 34px;
+  font-size: 13px;
+  width: 240px;
+  outline: none;
+  font-family: inherit;
+  transition: var(--transition);
+}
+
+.search-wrap input:focus {
+  border-color: var(--accent);
+  width: 290px;
+  box-shadow: 0 0 16px var(--accent-glow);
+}
+
+.search-wrap .search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.search-wrap .clear-btn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  cursor: pointer;
+  display: none;
+  font-size: 12px;
+}
+
+.search-wrap .clear-btn:hover {
+  color: var(--text-primary);
+}
+
+.kbd-badge {
+  position: absolute;
+  right: 9px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 10px;
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.08);
+  padding: 2px 5px;
+  border-radius: 4px;
+  pointer-events: none;
+  font-family: inherit;
+}
+
+/* 顶栏第二行：分类标签 + 核心操作按钮 */
+.hdr-bottom-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.tabs-list {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.tab-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 20px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-family: inherit;
+  transition: var(--transition);
+  user-select: none;
+}
+
+.tab-pill:hover {
+  border-color: var(--border-highlight);
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.tab-pill.active {
+  border-color: var(--accent);
+  color: #fff;
+  background: var(--accent-soft);
+  box-shadow: 0 0 14px var(--accent-glow);
+}
+
+.tab-pill .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.tab-pill .cnt {
+  font-size: 10.5px;
+  opacity: 0.8;
+  background: rgba(0, 0, 0, 0.35);
+  padding: 1px 5px;
+  border-radius: 8px;
+}
+
+.action-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+/* 按钮风格 Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  border-radius: var(--radius-md);
+  padding: 7px 13px;
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: var(--transition);
+  white-space: nowrap;
+  user-select: none;
+  box-shadow: var(--shadow-btn);
+}
+
+.btn:hover {
+  border-color: var(--border-highlight);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+.btn.primary {
+  background: linear-gradient(135deg, #f59e0b, #e58e3b);
+  border-color: #f59e0b;
+  color: #0c0d12;
+  font-weight: 700;
+  box-shadow: 0 4px 14px rgba(229, 142, 59, 0.35);
+}
+
+.btn.primary:hover {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  box-shadow: 0 6px 20px rgba(229, 142, 59, 0.5);
+  color: #000;
+}
+
+.btn.special {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.35);
+  color: #34d399;
+}
+
+.btn.special:hover {
+  border-color: #34d399;
+  background: rgba(16, 185, 129, 0.22);
+  color: #fff;
+}
+
+.btn-group {
+  display: inline-flex;
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  padding: 2px;
+}
+
+.btn-group .view-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: var(--transition);
+}
+
+.btn-group .view-btn.active {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* 下拉菜单 Dropdown */
+.dropdown-wrap {
+  position: relative;
+  display: inline-block;
+}
+
+.dropdown-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  background: #181a26;
+  border: 1px solid var(--border-highlight);
+  border-radius: var(--radius-md);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6);
+  padding: 6px;
+  min-width: 170px;
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 100;
+  backdrop-filter: blur(16px);
+}
+
+.dropdown-menu.show {
+  display: flex;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: var(--transition);
+  user-select: none;
+}
+
+.dropdown-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+}
+
+/* ================= 警告条 Warning Banner ================= */
+.warn-bar {
+  max-width: 1440px;
+  margin: 14px auto 0;
+  padding: 9px 16px;
+  border-radius: var(--radius-md);
+  background: rgba(248, 113, 113, 0.08);
+  border: 1px solid rgba(248, 113, 113, 0.25);
+  font-size: 12px;
+  color: #fca5a5;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.warn-bar .close-btn {
+  margin-left: auto;
+  cursor: pointer;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  transition: var(--transition);
+}
+
+.warn-bar .close-btn:hover {
+  color: var(--text-primary);
+}
+
+/* ================= 主内容区 Main ================= */
+main {
+  max-width: 1440px;
+  margin: 18px auto;
+  padding: 0 24px;
+}
+
+/* 账号卡片容器 */
+#cardsContainer.grid-mode {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 410px), 1fr));
+  gap: 16px;
+}
+
+#cardsContainer.list-mode {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* 分组标题 */
+.group-header {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 18px 0 6px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.group-header:first-child {
+  margin-top: 0;
+}
+
+.group-header .dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.group-header .cnt {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.group-header .divider {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--border-subtle), transparent);
+}
+
+/* ================= 卡片网格模式 (Grid Mode) ================= */
+.account-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
+  box-shadow: var(--shadow-card);
+  transition: var(--transition);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.account-card:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-highlight);
+  box-shadow: var(--shadow-card-hover);
+  transform: translateY(-2px);
+}
+
+.account-card.dragging {
+  opacity: 0.4;
+  border-style: dashed;
+}
+
+.account-card.drag-over {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+/* 卡片顶部：手柄 + 服务商 + 账号名称 + 分类 */
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.drag-grip {
+  cursor: grab;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+}
+
+.drag-grip:hover {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.drag-grip:active {
+  cursor: grabbing;
+}
+
+.issuer-tag {
+  padding: 3px 9px;
+  border-radius: var(--radius-sm);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
+}
+
+.issuer-tag.google { background: var(--brand-google-soft); color: var(--brand-google); border: 1px solid rgba(56, 189, 248, 0.35); }
+.issuer-tag.dev { background: var(--brand-dev-soft); color: var(--brand-dev); border: 1px solid rgba(167, 139, 250, 0.35); }
+.issuer-tag.ai { background: var(--brand-ai-soft); color: var(--brand-ai); border: 1px solid rgba(52, 211, 153, 0.35); }
+.issuer-tag.domain { background: var(--brand-domain-soft); color: var(--brand-domain); border: 1px solid rgba(250, 204, 21, 0.35); }
+.issuer-tag.cloud { background: var(--brand-cloud-soft); color: var(--brand-cloud); border: 1px solid rgba(45, 212, 191, 0.35); }
+.issuer-tag.fin { background: var(--brand-fin-soft); color: var(--brand-fin); border: 1px solid rgba(192, 132, 252, 0.35); }
+.issuer-tag.default { background: rgba(255, 255, 255, 0.08); color: var(--text-secondary); border: 1px solid var(--border-subtle); }
+
+.account-title-wrap {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.account-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+  outline: none;
+  border-bottom: 1px dashed transparent;
+  cursor: text;
+}
+
+.account-title:hover {
+  border-bottom-color: var(--border-highlight);
+}
+
+.account-title:focus {
+  border-bottom-color: var(--accent);
+  white-space: normal;
+}
+
+.category-dropdown {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  padding: 3px 6px;
+  font-family: inherit;
+  cursor: pointer;
+  outline: none;
+  max-width: 110px;
+  flex-shrink: 0;
+  transition: var(--transition);
+}
+
+.category-dropdown:focus {
+  border-color: var(--accent);
+}
+
+.category-dropdown option {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+}
+
+/* 核心展示区：大号 6 位验证码 + 独立倒计时圆环 */
+.code-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  gap: 12px;
+}
+
+.code-display {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  cursor: pointer;
+  user-select: all;
+  min-width: 0;
+}
+
+.code-digits {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: var(--text-primary);
+  transition: color 0.2s, transform 0.15s;
+  white-space: nowrap;
+}
+
+.code-digits:hover {
+  color: var(--accent);
+  transform: scale(1.02);
+}
+
+.code-digits.expiring {
+  color: var(--danger);
+  animation: pulse-warn 1s infinite;
+}
+
+@keyframes pulse-warn {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.copy-badge-pill {
+  font-size: 11px;
+  color: var(--text-muted);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  padding: 2px 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  pointer-events: none;
+  flex-shrink: 0;
+}
+
+/* 独立倒计时环 Ring */
+.timer-ring-wrap {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+}
+
+.timer-ring-wrap svg {
+  transform: rotate(-90deg);
+  width: 44px;
+  height: 44px;
+  display: block;
+}
+
+.timer-ring-bg {
+  stroke: rgba(255, 255, 255, 0.12);
+}
+
+.timer-ring-fg {
+  stroke: var(--accent);
+  transition: stroke-dashoffset 0.8s linear, stroke 0.3s;
+}
+
+.timer-ring-fg.expiring {
+  stroke: var(--danger);
+}
+
+.timer-sec {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  user-select: none;
+}
+
+.timer-sec.expiring {
+  color: var(--danger);
+  font-weight: 800;
+}
+
+/* 密钥明细行 */
+.secret-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text-muted);
+  gap: 8px;
+}
+
+.secret-text-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.secret-string {
+  color: #38bdf8;
+  letter-spacing: 0.5px;
+  user-select: all;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.secret-string.masked {
+  letter-spacing: 2px;
+  user-select: none;
+  color: var(--text-muted);
+}
+
+.secret-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.action-icon-btn {
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.action-icon-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.action-icon-btn.danger:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+  background: var(--danger-soft);
+}
+
+/* 密码与备用码展示框 */
+.credentials-box {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 12px;
+  padding: 8px 10px;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 32px;
+  outline: none;
+  transition: var(--transition);
+}
+
+.credentials-box:focus {
+  border-color: var(--accent);
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.credentials-box::placeholder {
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+.credentials-box.has-pwd {
+  border-color: rgba(56, 189, 248, 0.35);
+  background: rgba(56, 189, 248, 0.05);
+}
+
+/* 卡片底栏 */
+.card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.card-footer .left-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.card-footer .right-btns {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* ================= 紧凑列表模式 (List Mode) ================= */
+.account-row {
+  background: var(--bg-card);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  transition: var(--transition);
+}
+
+.account-row:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-highlight);
+  transform: translateY(-1px);
+}
+
+.account-row .row-name {
+  flex: 1.2;
+  min-width: 0;
+}
+
+.account-row .row-name b {
+  font-size: 13.5px;
+  color: var(--text-primary);
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.account-row .row-name span {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.account-row .row-code {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: 3px 8px;
+  border-radius: 6px;
+  min-width: 110px;
+  text-align: center;
+  transition: var(--transition);
+}
+
+.account-row .row-code:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.account-row .row-code.expiring {
+  color: var(--danger);
+}
+
+.account-row .row-note {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+}
+
+/* ================= 提示 Toast & 模态框 Modal ================= */
+.toast-tip {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: rgba(229, 142, 59, 0.95);
+  backdrop-filter: blur(10px);
+  color: #0c0d12;
+  font-weight: 700;
+  padding: 10px 22px;
+  border-radius: var(--radius-md);
+  font-size: 13.5px;
+  z-index: 999;
+  opacity: 0;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toast-tip.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.modal-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 24px 16px;
+  overflow: auto;
+}
+
+.modal-mask.show {
+  display: flex;
+}
+
+.modal-content {
+  background: #181a24;
+  border: 1px solid var(--border-highlight);
+  border-radius: var(--radius-xl);
+  width: 620px;
+  max-width: 100%;
+  padding: 24px 26px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+  animation: modal-pop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modal-pop {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.modal-header h3 {
+  font-size: 16px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.modal-header .close-btn {
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: var(--transition);
+}
+
+.modal-header .close-btn:hover {
+  color: var(--text-primary);
+}
+
+.form-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.form-field {
+  flex: 1;
+  min-width: 120px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.form-field input, .form-field select, .form-field textarea {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  border-radius: var(--radius-md);
+  padding: 9px 12px;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  transition: var(--transition);
+}
+
+.form-field input:focus, .form-field select:focus, .form-field textarea:focus {
+  border-color: var(--accent);
+}
+
+.form-field textarea {
+  resize: vertical;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+/* 空状态 Empty State */
+.empty-state {
+  text-align: center;
+  color: var(--text-muted);
+  padding: 60px 20px;
+  font-size: 14px;
+  line-height: 2;
+  grid-column: 1 / -1;
+}
+
+/* 响应式适配 Responsive */
+@media (max-width: 800px) {
+  header {
+    padding: 10px 16px;
+  }
+  .hdr-top-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .hdr-bottom-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .search-wrap input {
+    width: 100%;
+  }
+  .search-wrap input:focus {
+    width: 100%;
+  }
+  .action-bar {
+    margin-left: 0;
+    justify-content: space-between;
+  }
+}
+
+/* ================= 移动端 / PWA 适配（Android · iOS） ================= */
+html { -webkit-text-size-adjust: 100%; }
+body {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  padding-bottom: calc(70px + env(safe-area-inset-bottom));
+}
+button, .btn, .view-btn, .action-icon-btn, .tab-pill, .dropdown-item, .close-btn {
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+}
+@media (hover: none) {
+  .account-card:hover { transform: none; }
+}
+@media (max-width: 640px) {
+  main { padding: 0 12px; margin: 12px auto; }
+  header { padding: 10px 12px 8px; }
+  .brand .logo { width: 34px; height: 34px; border-radius: 9px; }
+  .brand-text h1 { font-size: 14.5px; }
+  .sub { font-size: 10.5px; }
+  .kbd-badge { display: none; }
+  .account-card { padding: 12px 12px; gap: 10px; }
+  .code-display .code-digits { font-size: 27px; }
+  .account-row { flex-wrap: wrap; padding: 10px; gap: 8px; }
+  .row-name { min-width: 130px; flex: 1; }
+  .row-note { flex-basis: 100%; order: 9; font-size: 11px; }
+  .modal-content {
+    width: 92vw !important;
+    max-width: 92vw !important;
+    max-height: 86vh;
+    overflow-y: auto;
+  }
+  /* iOS：输入框字号 ≥16px 防聚焦自动放大 */
+  input[type="text"], textarea, select { font-size: 16px; }
+  .warn-bar { font-size: 11.5px; padding: 10px 12px; }
+}
+</style>
+</head>
+<body>
+
+<!-- 顶栏 Header（整洁双行排版） -->
+<header>
+  <div class="hdr-container">
+    <!-- 第一行：品牌 + 搜索 + 视图切换 -->
+    <div class="hdr-top-row">
+      <div class="brand">
+        <div class="logo">
+          <span data-icon="shield-check" data-size="24"></span>
+        </div>
+        <div class="brand-text">
+          <h1>两步验证密钥管理器 <span class="badge">v3.0 Pro</span></h1>
+          <div class="sub">
+            <span class="live-dot"></span>
+            <span>100% 本地纯离线 · 毫秒级运算</span>
+            <span>· 共 <b id="totalBadge" style="color:var(--text-primary)">60</b> 个安全密钥</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="hdr-top-right">
+        <div class="search-wrap">
+          <span class="search-icon" data-icon="search" data-size="15"></span>
+          <input type="text" id="searchInput" placeholder="搜索服务商、账号、备注..." autocomplete="off">
+          <span class="kbd-badge">/</span>
+          <span class="clear-btn" id="searchClear">✕</span>
+        </div>
+
+        <div class="btn-group">
+          <button class="view-btn active" id="btnViewGrid" title="网格卡片视图">
+            <span data-icon="grid" data-size="13"></span> 网格
+          </button>
+          <button class="view-btn" id="btnViewList" title="紧凑列表视图">
+            <span data-icon="list" data-size="13"></span> 列表
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 第二行：分类药丸标签 + 动作工具栏 -->
+    <div class="hdr-bottom-row">
+      <div class="tabs-list" id="tabsList">
+        <!-- 动态分类药丸 -->
+      </div>
+
+      <div class="action-bar">
+        <button class="btn primary" id="btnAdd">
+          <span data-icon="plus" data-size="13"></span> 添加密钥
+        </button>
+
+        <button class="btn" id="btnBatch">
+          <span data-icon="layers" data-size="13"></span> 批量导入
+        </button>
+
+        <button class="btn special" id="btnSyncVault" title="查看小金库对应文件夹并重新生成最新表格">
+          <span data-icon="zap" data-size="13"></span> 导出到小金库
+        </button>
+
+        <!-- 更多操作下拉菜单 -->
+        <div class="dropdown-wrap">
+          <button class="btn" id="btnMoreMenu">
+            <span>更多操作</span>
+            <span style="font-size:10px;opacity:0.7">▼</span>
+          </button>
+          <div class="dropdown-menu" id="moreDropdown">
+            <div class="dropdown-item" id="menuExportCsv">
+              <span data-icon="download" data-size="14"></span> 导出 CSV 表格
+            </div>
+            <div class="dropdown-item" id="menuBackupJson">
+              <span data-icon="save" data-size="14"></span> 备份全量 JSON
+            </div>
+            <div class="dropdown-item" id="menuImportBackup">
+              <span data-icon="upload" data-size="14"></span> 导入/恢复备份
+            </div>
+            <div class="dropdown-item" id="menuToggleReveal">
+              <span data-icon="eye" data-size="14"></span>
+              <span id="revealMenuText">显示全部密钥</span>
+            </div>
+            <div class="dropdown-item" id="menuResetOrder" style="color:var(--text-muted);border-top:1px solid rgba(255,255,255,0.06);margin-top:3px;padding-top:6px">
+              <span data-icon="rotate-ccw" data-size="14"></span> 恢复默认排序
+            </div>
+          </div>
+        </div>
+        <input type="file" id="backupFileInput" accept=".json,.csv" style="display:none">
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- 安全警告条 -->
+<div class="warn-bar" id="warnBar">
+  <span data-icon="alert-triangle" data-size="15"></span>
+  <span><b>安全提醒：</b>本项目包含核心两步验证 Secret，等同于最高账号防护权限。数据完全保存在当前设备本地存储中，绝不自动上传，请勿将含密钥的备份文件发给他人。</span>
+  <span class="close-btn" id="warnClose" title="关闭提醒">✕</span>
+</div>
+
+<!-- 主体内容 -->
+<main>
+  <!-- 账号卡片容器 -->
+  <div id="cardsContainer" class="grid-mode">
+    <!-- 动态渲染账号 -->
+  </div>
+
+  <div class="empty-state" id="emptyState" style="display:none">
+    没有匹配的密钥，尝试切换分类或搜索其他关键词。
+  </div>
+</main>
+
+<!-- 浮动复制提示 -->
+<div class="toast-tip mono" id="toastTip">
+  <span data-icon="check" data-size="16"></span>
+  <span id="toastMsg">已复制到剪贴板</span>
+</div>
+
+<!-- 模态框：添加 / 编辑账号 -->
+<div class="modal-mask" id="acctModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="modalTitle"><span data-icon="shield-check" data-size="18"></span> 添加两步验证密钥</h3>
+      <span class="close-btn" id="modalClose">✕</span>
+    </div>
+    
+    <div class="form-row">
+      <div class="form-field">
+        <label>服务商 / 平台（例如 Google, GitHub, OpenAI）</label>
+        <input type="text" id="inpIssuer" placeholder="例如 Google, GitHub, OpenAI">
+      </div>
+      <div class="form-field">
+        <label>账号 / 邮箱标识 *</label>
+        <input type="text" id="inpName" placeholder="例如 yourname@gmail.com" required>
+      </div>
+    </div>
+
+    <div class="form-field" style="margin-bottom:12px">
+      <label>两步验证密钥（Base32 格式 Secret）*</label>
+      <input type="text" id="inpSecret" class="mono" placeholder="例如 JBSWY3DPEHPK3PXP" required style="letter-spacing:1px">
+    </div>
+
+    <div class="form-row">
+      <div class="form-field">
+        <label>分类归属</label>
+        <select id="inpCategory"></select>
+      </div>
+      <div class="form-field">
+        <label>算法模式</label>
+        <select id="inpAlgorithm">
+          <option value="SHA1">SHA-1（最常用标准）</option>
+          <option value="SHA256">SHA-256</option>
+          <option value="SHA512">SHA-512</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label>验证码位数</label>
+        <select id="inpDigits">
+          <option value="6">6 位数（标准）</option>
+          <option value="8">8 位数</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label>刷新周期</label>
+        <select id="inpPeriod">
+          <option value="30">30 秒（标准）</option>
+          <option value="60">60 秒</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-field" style="margin-bottom:12px">
+      <label>账号密码 / 备用恢复码 / 资产备注（自动安全留存）</label>
+      <textarea id="inpNote" rows="2" placeholder="填写登录密码、紧急备用码或账号备注信息..."></textarea>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn" id="modalCancel">取消</button>
+      <button class="btn primary" id="modalSave">保存并生效</button>
+    </div>
+  </div>
+</div>
+
+<!-- 模态框：批量导入 -->
+<div class="modal-mask" id="batchModal">
+  <div class="modal-content" style="width:680px">
+    <div class="modal-header">
+      <h3><span data-icon="layers" data-size="18"></span> 批量导入两步验证密钥</h3>
+      <span class="close-btn" id="batchClose">✕</span>
+    </div>
+
+    <p style="font-size:12px;color:var(--text-secondary);margin-bottom:10px;line-height:1.7">
+      支持三种导入格式（自动智能识别）：<br>
+      1. <b>otpauth 协议链接</b>：每行一个 <code>otpauth://totp/...?secret=...</code><br>
+      2. <b>简易文本对</b>：每行 <code>账号,密钥</code> 或 <code>服务商,账号,密钥</code><br>
+      3. <b>CSV 导出格式</b>：包含 <code>issuer,name,secret</code> 列的数据。
+    </p>
+
+    <div class="form-field">
+      <textarea id="batchInputText" class="mono" rows="8" placeholder="粘贴链接或密钥文本..."></textarea>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn" id="batchCancel">取消</button>
+      <button class="btn primary" id="batchSubmit">开始解析并导入</button>
+    </div>
+  </div>
+</div>
+
+<!-- 模态框：同步到小金库 -->
+<div class="modal-mask" id="vaultModal">
+  <div class="modal-content" style="width:640px">
+    <div class="modal-header">
+      <h3><span data-icon="zap" data-size="18"></span> 库房小金库 · 密钥资产同步</h3>
+      <span class="close-btn" id="vaultClose">✕</span>
+    </div>
+
+    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:14px;line-height:1.8">
+      所有核心密钥与凭据已同步解密并整理至以下三个小金库文件夹中：
+    </p>
+
+    <div style="background:rgba(0,0,0,0.3);border:1px solid var(--border-subtle);border-radius:var(--radius-md);padding:14px;font-size:12px;line-height:1.9;margin-bottom:16px" class="mono">
+      📁 <b>2_账号资产</b><br>
+      &nbsp;&nbsp;├─ 00_全量账号密码资产总表.csv (支持 Excel / WPS 打开)<br>
+      &nbsp;&nbsp;├─ 00_全量账号密码资产对照清单.txt<br>
+      &nbsp;&nbsp;├─ 01_Google_Gmail账号密码与备用码表.csv (包含15个独立密码与恢复码)<br>
+      &nbsp;&nbsp;├─ 02_开发平台账号密码表_GitHub_Vercel.csv<br>
+      &nbsp;&nbsp;├─ 03_AI服务账号密码表_OpenAI_ChatGPT.csv<br>
+      &nbsp;&nbsp;└─ 04_域名与云服务账号密码表_Dynadot_DuoPlus等.csv<br><br>
+      📁 <b>3_API & ToKen</b><br>
+      &nbsp;&nbsp;├─ 包含 ngrok、Kaggle、HuggingFace、SerpAPI、OpenRouter、FishAudio、Gemini 等全部 24 项 API 密钥<br>
+      &nbsp;&nbsp;└─ .env.example 环境变量模板<br><br>
+      📁 <b>4_授权凭证文件</b><br>
+      &nbsp;&nbsp;├─ 全量两步验证_otpauth导入链接清单.txt (1Password/Google Authenticator通用导入)<br>
+      &nbsp;&nbsp;└─ 两步验证全量备份_portable.json
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn primary" id="btnDownloadVaultCsv">下载最新总表 CSV</button>
+      <button class="btn" id="vaultConfirm">确定</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ================================================================
+   * 0. 自动宽屏检测与窗口自校正（确保桌面端始终为长方形）
+   * ================================================================ */
+  function enforceLandscapeWindow() {
+    try {
+      if (window.outerWidth < 1050 || window.outerHeight > window.outerWidth) {
+        var targetW = 1320;
+        var targetH = 820;
+        var targetX = Math.max(0, Math.floor((screen.availWidth - targetW) / 2));
+        var targetY = Math.max(0, Math.floor((screen.availHeight - targetH) / 2));
+        window.resizeTo(targetW, targetH);
+        window.moveTo(targetX, targetY);
+      }
+    } catch(e) {}
+  }
+  enforceLandscapeWindow();
+  window.addEventListener("load", enforceLandscapeWindow);
+
+  /* ================================================================
+   * 1. 内联高质感 SVG 图标库（100% 离线零依赖）
+   * ================================================================ */
+  var ICONS = {
+    "shield-check": '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>',
+    "search": '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+    "plus": '<path d="M5 12h14"/><path d="M12 5v14"/>',
+    "layers": '<path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.9a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 12.5-8.58 3.9a2 2 0 0 1-1.66 0L2 12.5"/><path d="m22 17.5-8.58 3.9a2 2 0 0 1-1.66 0L2 17.5"/>',
+    "upload": '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/>',
+    "download": '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>',
+    "save": '<path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/>',
+    "eye": '<path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/>',
+    "eye-off": '<path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"/><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/><path d="M17.479 17.499A10.75 10.75 0 0 1 2.06 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 2.825-4.14"/><line x1="2" x2="22" y1="2" y2="22"/>',
+    "alert-triangle": '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/>',
+    "check": '<path d="M20 6 9 17l-5-5"/>',
+    "clock": '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+    "grip-vertical": '<circle cx="9" cy="12" r="1.5"/><circle cx="9" cy="5" r="1.5"/><circle cx="9" cy="19" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="15" cy="5" r="1.5"/><circle cx="15" cy="19" r="1.5"/>',
+    "copy": '<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+    "link": '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+    "pencil": '<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>',
+    "trash-2": '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>',
+    "zap": '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+    "grid": '<rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/>',
+    "list": '<line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/>',
+    "rotate-ccw": '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>'
+  };
+
+  function icon(name, size, cls) {
+    size = size || 14;
+    var inner = ICONS[name] || '';
+    return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="svg-ic'+(cls?' '+cls:'')+'" style="vertical-align:middle;flex-shrink:0">'+inner+'</svg>';
+  }
+
+  function renderIcons(root) {
+    (root || document).querySelectorAll("[data-icon]").forEach(function(el) {
+      var name = el.getAttribute("data-icon");
+      var size = parseInt(el.getAttribute("data-size") || 14, 10);
+      el.innerHTML = icon(name, size);
+      el.removeAttribute("data-icon");
+    });
+  }
+
+  /* ================================================================
+   * 2. 数据模型与本地存储
+   * ================================================================ */
+  var LS_KEY = "2fa_manager_v2";
+  var LS_WARN = "2fa_warn_closed";
+  var LS_VIEW = "2fa_view_mode";
+  var ALL = "__all__", UNCATEGORIZED = "__none__";
+
+  var DEFAULT_CATS = [
+    { id: "cat_google", name: "Google / Gmail", color: "#38bdf8" },
+    { id: "cat_dev", name: "开发平台", color: "#a78bfa" },
+    { id: "cat_ai", name: "AI 服务", color: "#34d399" },
+    { id: "cat_domain", name: "域名服务", color: "#facc15" },
+    { id: "cat_cloud", name: "云服务 / 工具", color: "#2dd4bf" },
+    { id: "cat_fin", name: "金融 / 交易", color: "#c084fc" }
+  ];
+
+  var data = null;
+  var activeCat = ALL;
+  var searchQuery = "";
+  var dragId = null;
+  var viewMode = "grid";
+  try { viewMode = localStorage.getItem(LS_VIEW) || "grid"; } catch(e) {}
+
+  function firstRunSeed() {
+    var seed = { accounts: [], categories: DEFAULT_CATS.slice(), order: [], revealAll: false };
+    try {
+      var b64 = (window.__SEED_B64__ || "").replace(/[^A-Za-z0-9+/=]/g, "");
+      if (b64 && b64.indexOf("__SEED_B64") === -1) {
+        var bin = atob(b64);
+        var bytes = new Uint8Array(bin.length);
+        for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        seed = JSON.parse(new TextDecoder("utf-8").decode(bytes));
+      }
+    } catch (e) {}
+    seed.accounts = seed.accounts || [];
+    seed.categories = (seed.categories && seed.categories.length) ? seed.categories : DEFAULT_CATS.slice();
+    seed.order = seed.order || seed.accounts.map(function(a){ return a.id; });
+    seed.revealAll = false;
+    return seed;
+  }
+
+  function loadData() {
+    try {
+      var raw = localStorage.getItem(LS_KEY);
+      if (raw) {
+        data = JSON.parse(raw);
+      }
+    } catch (e) {}
+    if (!data || !data.accounts || !data.accounts.length) {
+      data = firstRunSeed();
+      saveData();
+    }
+    var exist = {};
+    data.accounts.forEach(function(a){ exist[a.id] = true; });
+    data.order = (data.order || []).filter(function(id){ return exist[id]; });
+    data.accounts.forEach(function(a){
+      if (data.order.indexOf(a.id) === -1) data.order.push(a.id);
+    });
+  }
+
+  function saveData() {
+    try {
+      localStorage.setItem(LS_KEY, JSON.stringify(data));
+    } catch (e) {}
+  }
+
+  function cleanSecret(s) {
+    return String(s || "").replace(/[\s\-_=]/g, "").toUpperCase();
+  }
+
+  function getCatName(id) {
+    if (id === UNCATEGORIZED) return "未分类";
+    for (var i = 0; i < data.categories.length; i++) {
+      if (data.categories[i].id === id) return data.categories[i].name;
+    }
+    return "未分类";
+  }
+
+  function getCatColor(id) {
+    if (id === UNCATEGORIZED) return "#64748b";
+    for (var i = 0; i < data.categories.length; i++) {
+      if (data.categories[i].id === id) return data.categories[i].color;
+    }
+    return "#64748b";
+  }
+
+  function autoCategory(issuer, name) {
+    var s = (issuer + " " + name).toLowerCase();
+    if (s.indexOf("gmail") !== -1 || s.indexOf("google") !== -1) return "cat_google";
+    if (s.indexOf("github") !== -1 || s.indexOf("vercel") !== -1) return "cat_dev";
+    if (s.indexOf("openai") !== -1 || s.indexOf("gpt") !== -1) return "cat_ai";
+    if (s.indexOf("dynadot") !== -1 || s.indexOf("domain") !== -1) return "cat_domain";
+    if (s.indexOf("duoplus") !== -1 || s.indexOf("tencent") !== -1 || s.indexOf("vmcard") !== -1) return "cat_cloud";
+    if (s.indexOf("okx") !== -1) return "cat_fin";
+    return UNCATEGORIZED;
+  }
+
+  function getIssuerClass(issuer, name) {
+    var s = ((issuer || "") + " " + (name || "")).toLowerCase();
+    if (s.indexOf("google") !== -1 || s.indexOf("gmail") !== -1) return "google";
+    if (s.indexOf("github") !== -1 || s.indexOf("vercel") !== -1) return "dev";
+    if (s.indexOf("openai") !== -1 || s.indexOf("gpt") !== -1) return "ai";
+    if (s.indexOf("dynadot") !== -1) return "domain";
+    if (s.indexOf("duoplus") !== -1 || s.indexOf("tencent") !== -1) return "cloud";
+    if (s.indexOf("okx") !== -1 || s.indexOf("vmcard") !== -1) return "fin";
+    return "default";
+  }
+
+  /* ================================================================
+   * 3. WebCrypto 算法内核（毫秒级算码）
+   * ================================================================ */
+  var B32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+  var ALG_MAP = { "SHA1": "SHA-1", "SHA256": "SHA-256", "SHA512": "SHA-512" };
+  var subtle = (window.crypto && window.crypto.subtle) ? window.crypto.subtle : null;
+  var keyCache = {};
+
+  function b32decode(s) {
+    s = cleanSecret(s).replace(/[^A-Z2-7]/g, "");
+    var bits = "", out = [];
+    for (var i = 0; i < s.length; i++) bits += B32.indexOf(s[i]).toString(2).padStart(5, "0");
+    for (var j = 0; j + 8 <= bits.length; j += 8) out.push(parseInt(bits.substr(j, 8), 2));
+    return out;
+  }
+
+  function getKey(secret, alg) {
+    var k = secret + "|" + alg;
+    if (!keyCache[k]) {
+      keyCache[k] = subtle.importKey(
+        "raw",
+        new Uint8Array(b32decode(secret)),
+        { name: "HMAC", hash: ALG_MAP[alg] || "SHA-1" },
+        false,
+        ["sign"]
+      );
+    }
+    return keyCache[k];
+  }
+
+  function counterMsg(counter) {
+    var msg = new Uint8Array(8);
+    var hi = Math.floor(counter / 4294967296), lo = counter >>> 0;
+    msg[0] = (hi >>> 24) & 0xff; msg[1] = (hi >>> 16) & 0xff; msg[2] = (hi >>> 8) & 0xff; msg[3] = hi & 0xff;
+    msg[4] = (lo >>> 24) & 0xff; msg[5] = (lo >>> 16) & 0xff; msg[6] = (lo >>> 8) & 0xff; msg[7] = lo & 0xff;
+    return msg;
+  }
+
+  function codeFromSig(sig, digits) {
+    var h = new Uint8Array(sig);
+    var off = h[h.length - 1] & 0x0f;
+    var bin = ((h[off] & 0x7f) << 24) | (h[off + 1] << 16) | (h[off + 2] << 8) | h[off + 3];
+    return String(bin % Math.pow(10, digits)).padStart(digits, "0");
+  }
+
+  var codeCache = {};
+
+  function getTotpCodeCached(a, nowSec) {
+    var period = a.period || 30;
+    var counter = Math.floor(nowSec / period);
+    var cacheKey = a.id + "_" + counter;
+    if (codeCache[cacheKey]) return Promise.resolve(codeCache[cacheKey]);
+
+    return getKey(a.secret, a.algorithm).then(function(key) {
+      return subtle.sign("HMAC", key, counterMsg(counter));
+    }).then(function(sig) {
+      var code = codeFromSig(sig, a.digits || 6);
+      codeCache[cacheKey] = code;
+      return code;
+    });
+  }
+
+  function hotpCode(a) {
+    return getKey(a.secret, a.algorithm).then(function(key) {
+      return subtle.sign("HMAC", key, counterMsg(a.counter || 0));
+    }).then(function(sig) {
+      return codeFromSig(sig, a.digits || 6);
+    });
+  }
+
+  function otpauthLink(a) {
+    var name = encodeURIComponent(a.name || "Unnamed");
+    var issuer = encodeURIComponent(a.issuer || "");
+    var link = "otpauth://" + (a.type === "HOTP" ? "hotp" : "totp") + "/" + name
+      + "?secret=" + a.secret + "&issuer=" + issuer
+      + "&algorithm=" + (a.algorithm || "SHA1") + "&digits=" + (a.digits || 6);
+    if (a.type === "HOTP") link += "&counter=" + (a.counter || 0);
+    else link += "&period=" + (a.period || 30);
+    return link;
+  }
+
+  /* ================================================================
+   * 4. UI 交互与工具函数
+   * ================================================================ */
+  var toastEl = document.getElementById("toastTip");
+  var toastMsg = document.getElementById("toastMsg");
+  var toastTimer = null;
+
+  function showToast(msg) {
+    toastMsg.textContent = msg;
+    toastEl.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function() {
+      toastEl.classList.remove("show");
+    }, 1800);
+  }
+
+  function copyText(t, tip) {
+    if (!t) return;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(t).then(function() {
+        showToast(tip || "已复制到剪贴板");
+      }).catch(function() { fallbackCopy(t, tip); });
+    } else {
+      fallbackCopy(t, tip);
+    }
+  }
+
+  function fallbackCopy(t, tip) {
+    var ta = document.createElement("textarea");
+    ta.value = t;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand("copy");
+      showToast(tip || "已复制到剪贴板");
+    } catch (e) {
+      showToast("复制失败，请手动选择复制");
+    }
+    document.body.removeChild(ta);
+  }
+
+  function formatDigits(code) {
+    if (!code || code === "------") return "------";
+    if (code.length === 6) {
+      return code.slice(0, 3) + " " + code.slice(3);
+    } else if (code.length === 8) {
+      return code.slice(0, 4) + " " + code.slice(4);
+    }
+    return code;
+  }
+
+  function getVisibleAccounts() {
+    var list = [];
+    var map = {};
+    data.accounts.forEach(function(a){ map[a.id] = a; });
+    data.order.forEach(function(id){ if (map[id]) list.push(map[id]); });
+
+    if (activeCat !== ALL) {
+      list = list.filter(function(a){ return (a.category || UNCATEGORIZED) === activeCat; });
+    }
+    if (searchQuery) {
+      var q = searchQuery.toLowerCase();
+      list = list.filter(function(a){
+        return (a.name || "").toLowerCase().indexOf(q) !== -1 ||
+               (a.issuer || "").toLowerCase().indexOf(q) !== -1 ||
+               (a.note || "").toLowerCase().indexOf(q) !== -1 ||
+               (a.secret || "").toLowerCase().indexOf(q) !== -1;
+      });
+    }
+    return list;
+  }
+
+  /* ================================================================
+   * 5. 渲染视图：网格模式 (Grid) 与 紧凑列表模式 (List)
+   * ================================================================ */
+  var container = document.getElementById("cardsContainer");
+  var RING_C = 2 * Math.PI * 18; // 半径 18，周长 113.097
+
+  function renderTabs() {
+    var tabsList = document.getElementById("tabsList");
+    tabsList.innerHTML = "";
+
+    // 全部
+    var allBtn = document.createElement("div");
+    allBtn.className = "tab-pill" + (activeCat === ALL ? " active" : "");
+    allBtn.innerHTML = '<span class="dot" style="background:#f8fafc"></span>全部<span class="cnt">' + data.accounts.length + '</span>';
+    allBtn.onclick = function() { activeCat = ALL; render(); };
+    tabsList.appendChild(allBtn);
+
+    // 预置分类
+    data.categories.forEach(function(c) {
+      var cnt = data.accounts.filter(function(a){ return (a.category || UNCATEGORIZED) === c.id; }).length;
+      var btn = document.createElement("div");
+      btn.className = "tab-pill" + (activeCat === c.id ? " active" : "");
+      btn.innerHTML = '<span class="dot" style="background:' + c.color + '"></span>' + c.name + '<span class="cnt">' + cnt + '</span>';
+      btn.onclick = function() { activeCat = c.id; render(); };
+      tabsList.appendChild(btn);
+    });
+
+    // 未分类
+    var uncCount = data.accounts.filter(function(a){ return (a.category || UNCATEGORIZED) === UNCATEGORIZED; }).length;
+    if (uncCount > 0) {
+      var uncBtn = document.createElement("div");
+      uncBtn.className = "tab-pill" + (activeCat === UNCATEGORIZED ? " active" : "");
+      uncBtn.innerHTML = '<span class="dot" style="background:#64748b"></span>未分类<span class="cnt">' + uncCount + '</span>';
+      uncBtn.onclick = function() { activeCat = UNCATEGORIZED; render(); };
+      tabsList.appendChild(uncBtn);
+    }
+  }
+
+  function buildGridCard(a) {
+    var card = document.createElement("div");
+    card.className = "account-card";
+    card.dataset.id = a.id;
+
+    // 拖动排序手柄
+    var grip = document.createElement("div");
+    grip.className = "drag-grip";
+    grip.title = "拖动调整顺序";
+    grip.draggable = true;
+    grip.innerHTML = icon("grip-vertical", 16);
+    grip.ondragstart = function(e) {
+      dragId = a.id;
+      card.classList.add("dragging");
+      try { e.dataTransfer.setData("text/plain", a.id); } catch(err){}
+    };
+    grip.ondragend = function() {
+      card.classList.remove("dragging");
+      document.querySelectorAll(".drag-over").forEach(function(x){ x.classList.remove("drag-over"); });
+    };
+    card.ondragover = function(e) {
+      e.preventDefault();
+      if (dragId && dragId !== a.id) card.classList.add("drag-over");
+    };
+    card.ondragleave = function() { card.classList.remove("drag-over"); };
+    card.ondrop = function(e) {
+      e.preventDefault();
+      card.classList.remove("drag-over");
+      if (!dragId || dragId === a.id) return;
+      var from = data.order.indexOf(dragId), to = data.order.indexOf(a.id);
+      if (from < 0 || to < 0) return;
+      data.order.splice(from, 1);
+      data.order.splice(to, 0, dragId);
+      dragId = null;
+      saveData();
+      render();
+    };
+
+    // 头部：手柄 + 服务商 + 账号名 + 分类下拉
+    var hdr = document.createElement("div");
+    hdr.className = "card-header";
+    hdr.appendChild(grip);
+
+    var issuerName = a.issuer || (a.name.indexOf("gmail.com") !== -1 ? "Google" : "未指定");
+    var tagClass = getIssuerClass(a.issuer, a.name);
+    var tag = document.createElement("div");
+    tag.className = "issuer-tag " + tagClass;
+    tag.textContent = issuerName;
+    hdr.appendChild(tag);
+
+    var titleWrap = document.createElement("div");
+    titleWrap.className = "account-title-wrap";
+    var title = document.createElement("span");
+    title.className = "account-title mono";
+    title.textContent = a.name;
+    title.title = a.name + "（点击可内联编辑）";
+    title.contentEditable = "true";
+    title.spellcheck = false;
+    title.onblur = function() {
+      var v = title.textContent.trim();
+      if (v && v !== a.name) { a.name = v; saveData(); showToast("账号名已保存"); }
+      else title.textContent = a.name;
+    };
+    title.onkeydown = function(e) { if (e.key === "Enter") { e.preventDefault(); title.blur(); } };
+    titleWrap.appendChild(title);
+    hdr.appendChild(titleWrap);
+
+    // 分类切换下拉
+    var catSel = document.createElement("select");
+    catSel.className = "category-dropdown";
+    var opt0 = document.createElement("option");
+    opt0.value = UNCATEGORIZED;
+    opt0.textContent = "未分类";
+    catSel.appendChild(opt0);
+    data.categories.forEach(function(c){
+      var opt = document.createElement("option");
+      opt.value = c.id;
+      opt.textContent = c.name;
+      catSel.appendChild(opt);
+    });
+    catSel.value = a.category || UNCATEGORIZED;
+    catSel.onchange = function() {
+      a.category = catSel.value;
+      saveData();
+      render();
+      showToast("已归类至「" + getCatName(a.category) + "」");
+    };
+    hdr.appendChild(catSel);
+    card.appendChild(hdr);
+
+    // 核心展示区：大号 6 位验证码 + 动态倒计时环
+    var codeBox = document.createElement("div");
+    codeBox.className = "code-box";
+
+    var codeDisplay = document.createElement("div");
+    codeDisplay.className = "code-display";
+    codeDisplay.title = "点击一键复制验证码";
+
+    var codeDigits = document.createElement("span");
+    codeDigits.className = "code-digits mono";
+    codeDigits.textContent = a.type === "HOTP" ? "点击生成" : "------";
+    codeDigits.dataset.code = "1";
+    codeDisplay.appendChild(codeDigits);
+
+    var copyBadge = document.createElement("span");
+    copyBadge.className = "copy-badge-pill";
+    copyBadge.innerHTML = icon("copy", 11) + " 复制";
+    codeDisplay.appendChild(copyBadge);
+
+    codeDisplay.onclick = function() {
+      if (a.type === "HOTP") {
+        hotpCode(a).then(function(c) {
+          codeDigits.textContent = formatDigits(c);
+          a.counter = (a.counter || 0) + 1;
+          saveData();
+          showToast("已生成并复制验证码 " + c);
+          copyText(c);
+        });
+        return;
+      }
+      var cleanCode = codeDigits.textContent.replace(/\s+/g, "");
+      if (cleanCode && cleanCode !== "------") {
+        copyText(cleanCode, "已复制验证码 " + cleanCode);
+      }
+    };
+    codeBox.appendChild(codeDisplay);
+
+    // 倒计时圆环
+    var ringWrap = document.createElement("div");
+    ringWrap.className = "timer-ring-wrap";
+    ringWrap.innerHTML = '<svg viewBox="0 0 44 44">' +
+      '<circle class="timer-ring-bg" cx="22" cy="22" r="18" fill="none" stroke-width="3"/>' +
+      '<circle class="timer-ring-fg" cx="22" cy="22" r="18" fill="none" stroke-width="3" stroke-linecap="round" stroke-dasharray="113.1" stroke-dashoffset="0"/>' +
+      '</svg>' +
+      '<div class="timer-sec mono">30</div>';
+    codeBox.appendChild(ringWrap);
+    card.appendChild(codeBox);
+
+    // 密钥明细行
+    var secRow = document.createElement("div");
+    secRow.className = "secret-row";
+
+    var secWrap = document.createElement("div");
+    secWrap.className = "secret-text-wrap";
+    secWrap.innerHTML = '<span style="color:var(--text-muted)">密钥</span>';
+
+    var secVal = document.createElement("span");
+    secVal.className = "secret-string mono" + (data.revealAll ? "" : " masked");
+    secVal.textContent = data.revealAll ? a.secret : "••••••••••••";
+    secWrap.appendChild(secVal);
+    secRow.appendChild(secWrap);
+
+    var secActions = document.createElement("div");
+    secActions.className = "secret-actions";
+
+    var btnEye = document.createElement("button");
+    btnEye.className = "action-icon-btn";
+    btnEye.title = "显示/隐藏此密钥";
+    btnEye.innerHTML = icon(data.revealAll ? "eye-off" : "eye", 13);
+    btnEye.onclick = function() {
+      var isMasked = secVal.classList.contains("masked");
+      if (isMasked) {
+        secVal.classList.remove("masked");
+        secVal.textContent = a.secret;
+        btnEye.innerHTML = icon("eye-off", 13);
+      } else {
+        secVal.classList.add("masked");
+        secVal.textContent = "••••••••••••";
+        btnEye.innerHTML = icon("eye", 13);
+      }
+    };
+    secActions.appendChild(btnEye);
+
+    var btnCopySec = document.createElement("button");
+    btnCopySec.className = "action-icon-btn";
+    btnCopySec.title = "复制 Base32 密钥";
+    btnCopySec.innerHTML = icon("copy", 13);
+    btnCopySec.onclick = function() { copyText(a.secret, "已复制 2FA 密钥"); };
+    secActions.appendChild(btnCopySec);
+
+    secRow.appendChild(secActions);
+    card.appendChild(secRow);
+
+    // 密码 / 备用码 / 备注框
+    var noteBox = document.createElement("textarea");
+    noteBox.className = "credentials-box" + (a.note ? " has-pwd" : "");
+    noteBox.rows = 1;
+    noteBox.placeholder = "添加账号登录密码 / 备用恢复码（自动实时保存）…";
+    noteBox.value = a.note || "";
+    noteBox.oninput = function() {
+      a.note = noteBox.value;
+      saveData();
+      autoGrowTextarea(noteBox);
+    };
+    card.appendChild(noteBox);
+    setTimeout(function(){ autoGrowTextarea(noteBox); }, 0);
+
+    // 底栏元数据与快捷按钮组
+    var footer = document.createElement("div");
+    footer.className = "card-footer";
+
+    var leftMeta = document.createElement("div");
+    leftMeta.className = "left-meta";
+    leftMeta.textContent = (a.type || "TOTP") + " · " + (a.algorithm || "SHA1") + " · " + (a.digits || 6) + "位 · " + (a.period || 30) + "s";
+    footer.appendChild(leftMeta);
+
+    var rightBtns = document.createElement("div");
+    rightBtns.className = "right-btns";
+
+    var btnCopyCode = document.createElement("button");
+    btnCopyCode.className = "action-icon-btn";
+    btnCopyCode.title = "复制当前 6 位验证码";
+    btnCopyCode.innerHTML = icon("copy", 13);
+    btnCopyCode.onclick = function() {
+      var c = codeDigits.textContent.replace(/\s+/g, "");
+      if (c && c !== "------") copyText(c, "已复制验证码 " + c);
+    };
+    rightBtns.appendChild(btnCopyCode);
+
+    var btnLink = document.createElement("button");
+    btnLink.className = "action-icon-btn";
+    btnLink.title = "复制 otpauth:// 导入链接";
+    btnLink.innerHTML = icon("link", 13);
+    btnLink.onclick = function() { copyText(otpauthLink(a), "已复制 otpauth 导入链接"); };
+    rightBtns.appendChild(btnLink);
+
+    var btnEdit = document.createElement("button");
+    btnEdit.className = "action-icon-btn";
+    btnEdit.title = "编辑账号信息";
+    btnEdit.innerHTML = icon("pencil", 13);
+    btnEdit.onclick = function() { openEditModal(a); };
+    rightBtns.appendChild(btnEdit);
+
+    var btnDel = document.createElement("button");
+    btnDel.className = "action-icon-btn danger";
+    btnDel.title = "删除此密钥";
+    btnDel.innerHTML = icon("trash-2", 13);
+    btnDel.onclick = function() { deleteAccount(a); };
+    rightBtns.appendChild(btnDel);
+
+    footer.appendChild(rightBtns);
+    card.appendChild(footer);
+
+    return card;
+  }
+
+  function buildListRow(a) {
+    var row = document.createElement("div");
+    row.className = "account-row";
+    row.dataset.id = a.id;
+
+    var grip = document.createElement("div");
+    grip.className = "drag-grip";
+    grip.innerHTML = icon("grip-vertical", 14);
+    row.appendChild(grip);
+
+    var issuerName = a.issuer || (a.name.indexOf("gmail.com") !== -1 ? "Google" : "未指定");
+    var tagClass = getIssuerClass(a.issuer, a.name);
+    var tag = document.createElement("div");
+    tag.className = "issuer-tag " + tagClass;
+    tag.textContent = issuerName;
+    row.appendChild(tag);
+
+    var nameBlock = document.createElement("div");
+    nameBlock.className = "row-name";
+    nameBlock.innerHTML = '<b class="mono">' + escapeHtml(a.name) + '</b><span>' + (a.type||"TOTP") + ' · ' + (a.algorithm||"SHA1") + '</span>';
+    row.appendChild(nameBlock);
+
+    var catName = document.createElement("span");
+    catName.style.fontSize = "11.5px";
+    catName.style.color = getCatColor(a.category);
+    catName.textContent = getCatName(a.category);
+    row.appendChild(catName);
+
+    var code = document.createElement("div");
+    code.className = "row-code mono";
+    code.dataset.code = "1";
+    code.textContent = "------";
+    code.onclick = function() {
+      var cleanCode = code.textContent.replace(/\s+/g, "");
+      if (cleanCode && cleanCode !== "------") copyText(cleanCode, "已复制 " + cleanCode);
+    };
+    row.appendChild(code);
+
+    var ringWrap = document.createElement("div");
+    ringWrap.className = "timer-ring-wrap";
+    ringWrap.style.width = "36px";
+    ringWrap.style.height = "36px";
+    ringWrap.innerHTML = '<svg viewBox="0 0 44 44" style="width:36px;height:36px">' +
+      '<circle class="timer-ring-bg" cx="22" cy="22" r="18" fill="none" stroke-width="3"/>' +
+      '<circle class="timer-ring-fg" cx="22" cy="22" r="18" fill="none" stroke-width="3" stroke-linecap="round" stroke-dasharray="113.1" stroke-dashoffset="0"/>' +
+      '</svg>' +
+      '<div class="timer-sec mono" style="font-size:11px">30</div>';
+    row.appendChild(ringWrap);
+
+    var notePreview = document.createElement("div");
+    notePreview.className = "row-note mono";
+    notePreview.textContent = a.note ? ("📝 " + a.note) : "";
+    notePreview.title = a.note || "";
+    row.appendChild(notePreview);
+
+    var actions = document.createElement("div");
+    actions.style.display = "flex";
+    actions.style.gap = "6px";
+
+    var btnCopy = document.createElement("button");
+    btnCopy.className = "action-icon-btn";
+    btnCopy.title = "复制密钥";
+    btnCopy.innerHTML = icon("copy", 13);
+    btnCopy.onclick = function() { copyText(a.secret, "已复制密钥"); };
+    actions.appendChild(btnCopy);
+
+    var btnLink = document.createElement("button");
+    btnLink.className = "action-icon-btn";
+    btnLink.title = "复制 otpauth 链接";
+    btnLink.innerHTML = icon("link", 13);
+    btnLink.onclick = function() { copyText(otpauthLink(a), "已复制 otpauth 导入链接"); };
+    actions.appendChild(btnLink);
+
+    var btnEdit = document.createElement("button");
+    btnEdit.className = "action-icon-btn";
+    btnEdit.title = "编辑";
+    btnEdit.innerHTML = icon("pencil", 13);
+    btnEdit.onclick = function() { openEditModal(a); };
+    actions.appendChild(btnEdit);
+
+    var btnDel = document.createElement("button");
+    btnDel.className = "action-icon-btn danger";
+    btnDel.title = "删除";
+    btnDel.innerHTML = icon("trash-2", 13);
+    btnDel.onclick = function() { deleteAccount(a); };
+    actions.appendChild(btnDel);
+
+    row.appendChild(actions);
+    return row;
+  }
+
+  function render() {
+    renderTabs();
+    container.innerHTML = "";
+    container.className = viewMode === "list" ? "list-mode" : "grid-mode";
+
+    var accounts = getVisibleAccounts();
+    document.getElementById("totalBadge").textContent = data.accounts.length;
+    var empty = document.getElementById("emptyState");
+
+    if (!accounts.length) {
+      empty.textContent = data.accounts.length === 0
+        ? "当前设备还没有任何密钥。点击顶部「更多操作 → 导入/恢复备份」，选择 两步验证全量备份_portable.json 即可一键导入全部密钥；也可用「批量导入」粘贴 otpauth:// 链接。"
+        : "没有匹配的密钥，尝试切换分类或搜索其他关键词。";
+      empty.style.display = "block";
+      return;
+    }
+    empty.style.display = "none";
+
+    // 默认分组展示
+    if (activeCat === ALL && !searchQuery) {
+      data.categories.forEach(function(c) {
+        var members = accounts.filter(function(a){ return (a.category || UNCATEGORIZED) === c.id; });
+        if (!members.length) return;
+
+        var grpHdr = document.createElement("div");
+        grpHdr.className = "group-header";
+        grpHdr.innerHTML = '<span class="dot" style="background:' + c.color + '"></span>' +
+          '<span>' + c.name + '</span>' +
+          '<span class="cnt">' + members.length + ' 个</span>' +
+          '<div class="divider"></div>';
+        container.appendChild(grpHdr);
+
+        members.forEach(function(a) {
+          container.appendChild(viewMode === "list" ? buildListRow(a) : buildGridCard(a));
+        });
+      });
+
+      var uncMembers = accounts.filter(function(a){ return (a.category || UNCATEGORIZED) === UNCATEGORIZED; });
+      if (uncMembers.length) {
+        var uncHdr = document.createElement("div");
+        uncHdr.className = "group-header";
+        uncHdr.innerHTML = '<span class="dot" style="background:#64748b"></span>' +
+          '<span>未分类</span>' +
+          '<span class="cnt">' + uncMembers.length + ' 个</span>' +
+          '<div class="divider"></div>';
+        container.appendChild(uncHdr);
+
+        uncMembers.forEach(function(a) {
+          container.appendChild(viewMode === "list" ? buildListRow(a) : buildGridCard(a));
+        });
+      }
+    } else {
+      accounts.forEach(function(a) {
+        container.appendChild(viewMode === "list" ? buildListRow(a) : buildGridCard(a));
+      });
+    }
+
+    tick(true);
+  }
+
+  function autoGrowTextarea(ta) {
+    ta.style.height = "auto";
+    ta.style.height = Math.min(ta.scrollHeight, 120) + "px";
+  }
+
+  function escapeHtml(s) {
+    return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
+  /* ================================================================
+   * 6. 高性能平滑时钟引擎 (Tick Loop)
+   * ================================================================ */
+  var isTicking = false;
+  function tick(force) {
+    if (isTicking && !force) return;
+    isTicking = true;
+
+    var now = Math.floor(Date.now() / 1000);
+    var elements = container.querySelectorAll(".account-card, .account-row");
+    elements.forEach(function(card) {
+      var id = card.dataset.id;
+      var a = null;
+      for (var i = 0; i < data.accounts.length; i++) {
+        if (data.accounts[i].id === id) { a = data.accounts[i]; break; }
+      }
+      if (!a || a.type === "HOTP") return;
+
+      var period = a.period || 30;
+      var remain = period - (now % period);
+
+      // 更新 SVG 倒计时环
+      var ringFg = card.querySelector(".timer-ring-fg");
+      var secText = card.querySelector(".timer-sec");
+      if (ringFg) {
+        var offset = RING_C * (1 - remain / period);
+        ringFg.style.strokeDashoffset = offset;
+        ringFg.classList.toggle("expiring", remain <= 5);
+      }
+      if (secText) {
+        secText.textContent = remain;
+        secText.classList.toggle("expiring", remain <= 5);
+      }
+
+      // 更新 6 位验证码
+      var codeEl = card.querySelector("[data-code]");
+      if (codeEl) {
+        getTotpCodeCached(a, now).then(function(c) {
+          codeEl.textContent = formatDigits(c);
+          codeEl.classList.toggle("expiring", remain <= 5);
+        }).catch(function(){});
+      }
+    });
+
+    setTimeout(function(){ isTicking = false; }, 50);
+  }
+
+  setInterval(function(){ tick(); }, 1000);
+
+
+  /* ================================================================
+   * 7. 账号添加与编辑逻辑
+   * ================================================================ */
+  var acctModal = document.getElementById("acctModal");
+  var editingId = null;
+
+  function openEditModal(a) {
+    editingId = a ? a.id : null;
+    document.getElementById("modalTitle").innerHTML = icon("shield-check", 18) + (a ? " 编辑两步验证密钥" : " 添加两步验证密钥");
+    document.getElementById("inpIssuer").value = a ? (a.issuer || "") : "";
+    document.getElementById("inpName").value = a ? (a.name || "") : "";
+    document.getElementById("inpSecret").value = a ? (a.secret || "") : "";
+    document.getElementById("inpAlgorithm").value = a ? (a.algorithm || "SHA1") : "SHA1";
+    document.getElementById("inpDigits").value = a ? String(a.digits || 6) : "6";
+    document.getElementById("inpPeriod").value = a ? String(a.period || 30) : "30";
+    document.getElementById("inpNote").value = a ? (a.note || "") : "";
+
+    var catSelect = document.getElementById("inpCategory");
+    catSelect.innerHTML = '<option value="' + UNCATEGORIZED + '">未分类</option>';
+    data.categories.forEach(function(c){
+      var opt = document.createElement("option");
+      opt.value = c.id;
+      opt.textContent = c.name;
+      catSelect.appendChild(opt);
+    });
+    catSelect.value = a ? (a.category || UNCATEGORIZED) : UNCATEGORIZED;
+
+    acctModal.classList.add("show");
+  }
+
+  document.getElementById("btnAdd").onclick = function() { openEditModal(null); };
+  document.getElementById("modalClose").onclick = function() { acctModal.classList.remove("show"); };
+  document.getElementById("modalCancel").onclick = function() { acctModal.classList.remove("show"); };
+
+  document.getElementById("modalSave").onclick = function() {
+    var name = document.getElementById("inpName").value.trim();
+    var secret = cleanSecret(document.getElementById("inpSecret").value);
+    if (!name) { alert("请输入账号/邮箱标识"); return; }
+    if (!secret || secret.length < 8) { alert("请输入有效的 Base32 密钥（至少8位字母数字）"); return; }
+
+    var issuer = document.getElementById("inpIssuer").value.trim();
+    var cat = document.getElementById("inpCategory").value;
+    if (cat === UNCATEGORIZED) cat = autoCategory(issuer, name);
+
+    if (editingId) {
+      for (var i = 0; i < data.accounts.length; i++) {
+        if (data.accounts[i].id === editingId) {
+          data.accounts[i].issuer = issuer;
+          data.accounts[i].name = name;
+          data.accounts[i].secret = secret;
+          data.accounts[i].category = cat;
+          data.accounts[i].algorithm = document.getElementById("inpAlgorithm").value;
+          data.accounts[i].digits = parseInt(document.getElementById("inpDigits").value, 10);
+          data.accounts[i].period = parseInt(document.getElementById("inpPeriod").value, 10);
+          data.accounts[i].note = document.getElementById("inpNote").value;
+          break;
+        }
+      }
+      showToast("密钥已更新并保存");
+    } else {
+      var newId = "acc_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      var newAcct = {
+        id: newId,
+        issuer: issuer,
+        name: name,
+        secret: secret,
+        category: cat,
+        algorithm: document.getElementById("inpAlgorithm").value,
+        digits: parseInt(document.getElementById("inpDigits").value, 10),
+        period: parseInt(document.getElementById("inpPeriod").value, 10),
+        type: "TOTP",
+        note: document.getElementById("inpNote").value,
+        createdAt: Date.now()
+      };
+      data.accounts.unshift(newAcct);
+      data.order.unshift(newId);
+      showToast("新密钥已添加并生效");
+    }
+
+    saveData();
+    acctModal.classList.remove("show");
+    render();
+  };
+
+  function deleteAccount(a) {
+    if (!confirm("确定删除「" + (a.name || "未命名") + "」？\n删除后不可恢复，请确保已备份。")) return;
+    data.accounts = data.accounts.filter(function(x){ return x.id !== a.id; });
+    data.order = data.order.filter(function(id){ return id !== a.id; });
+    saveData();
+    render();
+    showToast("已删除密钥");
+  }
+
+  /* ================================================================
+   * 8. 批量导入
+   * ================================================================ */
+  var batchModal = document.getElementById("batchModal");
+  document.getElementById("btnBatch").onclick = function() {
+    document.getElementById("batchInputText").value = "";
+    batchModal.classList.add("show");
+  };
+  document.getElementById("batchClose").onclick = function() { batchModal.classList.remove("show"); };
+  document.getElementById("batchCancel").onclick = function() { batchModal.classList.remove("show"); };
+
+  document.getElementById("batchSubmit").onclick = function() {
+    var text = document.getElementById("batchInputText").value.trim();
+    if (!text) return;
+
+    var lines = text.split(/\r?\n/);
+    var added = 0;
+    var existingSecrets = {};
+    data.accounts.forEach(function(a){ existingSecrets[a.secret] = true; });
+
+    lines.forEach(function(line) {
+      line = line.trim();
+      if (!line || line.startsWith("#")) return;
+
+      var issuer = "", name = "", secret = "";
+
+      if (line.toLowerCase().startsWith("otpauth://")) {
+        try {
+          var u = new URL(line);
+          var path = decodeURIComponent(u.pathname.replace(/^\/\//, "").replace(/^totp\//i, "").replace(/^hotp\//i, ""));
+          if (path.indexOf(":") !== -1) {
+            var parts = path.split(":");
+            issuer = parts[0];
+            name = parts[1];
+          } else {
+            name = path;
+          }
+          secret = cleanSecret(u.searchParams.get("secret"));
+          if (u.searchParams.get("issuer")) issuer = u.searchParams.get("issuer");
+        } catch(e){}
+      } else {
+        var parts = line.split(/[,\t]/);
+        if (parts.length >= 3) {
+          issuer = parts[0].trim();
+          name = parts[1].trim();
+          secret = cleanSecret(parts[2]);
+        } else if (parts.length === 2) {
+          name = parts[0].trim();
+          secret = cleanSecret(parts[1]);
+        }
+      }
+
+      if (secret && secret.length >= 8 && !existingSecrets[secret]) {
+        var newId = "acc_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+        var na = {
+          id: newId,
+          issuer: issuer,
+          name: name || "导入账号",
+          secret: secret,
+          category: autoCategory(issuer, name),
+          algorithm: "SHA1",
+          digits: 6,
+          period: 30,
+          type: "TOTP",
+          note: "",
+          createdAt: Date.now()
+        };
+        data.accounts.push(na);
+        data.order.push(newId);
+        existingSecrets[secret] = true;
+        added++;
+      }
+    });
+
+    saveData();
+    batchModal.classList.remove("show");
+    render();
+    showToast("成功批量导入 " + added + " 个新密钥");
+  };
+
+  /* ================================================================
+   * 9. 备份与导出 / 同步小金库 / 更多下拉
+   * ================================================================ */
+  var moreBtn = document.getElementById("btnMoreMenu");
+  var moreDropdown = document.getElementById("moreDropdown");
+
+  moreBtn.onclick = function(e) {
+    e.stopPropagation();
+    moreDropdown.classList.toggle("show");
+  };
+
+  document.addEventListener("click", function() {
+    moreDropdown.classList.remove("show");
+  });
+
+  document.getElementById("menuBackupJson").onclick = function() {
+    var blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "两步验证密钥全量备份_" + new Date().toISOString().slice(0, 10) + ".json";
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast("JSON 全量备份已导出");
+  };
+
+  document.getElementById("menuExportCsv").onclick = function() {
+    exportFullCsv();
+  };
+
+  function exportFullCsv() {
+    var rows = [["序号", "服务商", "账号标识", "分类", "2FA密钥", "算法", "位数", "周期", "备注", "otpauth链接"]];
+    data.accounts.forEach(function(a, idx) {
+      rows.push([
+        idx + 1,
+        '"' + (a.issuer || "").replace(/"/g, '""') + '"',
+        '"' + (a.name || "").replace(/"/g, '""') + '"',
+        '"' + getCatName(a.category).replace(/"/g, '""') + '"',
+        a.secret,
+        a.algorithm || "SHA1",
+        a.digits || 6,
+        a.period || 30,
+        '"' + (a.note || "").replace(/"/g, '""') + '"',
+        '"' + otpauthLink(a) + '"'
+      ]);
+    });
+    var csvContent = "\uFEFF" + rows.map(function(e){ return e.join(","); }).join("\n");
+    var blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "两步验证密钥与账号资产总表_" + new Date().toISOString().slice(0, 10) + ".csv";
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast("CSV 账号总表已导出");
+  }
+
+  var fileInput = document.getElementById("backupFileInput");
+  document.getElementById("menuImportBackup").onclick = function() { fileInput.click(); };
+  fileInput.onchange = function(e) {
+    var file = e.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(evt) {
+      try {
+        var parsed = JSON.parse(evt.target.result);
+        if (parsed.accounts && Array.isArray(parsed.accounts)) {
+          if (confirm("检测到包含 " + parsed.accounts.length + " 个密钥的备份数据。\n确定要合并导入到当前库中吗？")) {
+            var count = 0;
+            var exist = {};
+            data.accounts.forEach(function(a){ exist[a.secret] = true; });
+            parsed.accounts.forEach(function(a){
+              if (!exist[a.secret]) {
+                data.accounts.push(a);
+                data.order.push(a.id);
+                exist[a.secret] = true;
+                count++;
+              }
+            });
+            saveData();
+            render();
+            showToast("成功恢复合并 " + count + " 个新密钥");
+          }
+        }
+      } catch(err) {
+        alert("导入失败：文件格式不符合 JSON 备份规范");
+      }
+    };
+    reader.readAsText(file, "utf-8");
+  };
+
+  document.getElementById("menuToggleReveal").onclick = function() {
+    data.revealAll = !data.revealAll;
+    document.getElementById("revealMenuText").textContent = data.revealAll ? "隐藏全部密钥" : "显示全部密钥";
+    document.querySelectorAll(".secret-string").forEach(function(el) {
+      var card = el.closest(".account-card");
+      if (!card) return;
+      var a = null;
+      for (var i = 0; i < data.accounts.length; i++) {
+        if (data.accounts[i].id === card.dataset.id) { a = data.accounts[i]; break; }
+      }
+      if (!a) return;
+      if (data.revealAll) {
+        el.classList.remove("masked");
+        el.textContent = a.secret;
+      } else {
+        el.classList.add("masked");
+        el.textContent = "••••••••••••";
+      }
+    });
+    saveData();
+  };
+
+  document.getElementById("menuResetOrder").onclick = function() {
+    if (!confirm("恢复为默认排序？自定义调整的顺序将重置。")) return;
+    data.order = data.accounts.map(function(a){ return a.id; });
+    saveData();
+    render();
+    showToast("已恢复默认排序");
+  };
+
+  var vaultModal = document.getElementById("vaultModal");
+  document.getElementById("btnSyncVault").onclick = function() {
+    vaultModal.classList.add("show");
+  };
+  document.getElementById("vaultClose").onclick = function() { vaultModal.classList.remove("show"); };
+  document.getElementById("vaultConfirm").onclick = function() { vaultModal.classList.remove("show"); };
+  document.getElementById("btnDownloadVaultCsv").onclick = function() {
+    exportFullCsv();
+  };
+
+  var btnGrid = document.getElementById("btnViewGrid");
+  var btnList = document.getElementById("btnViewList");
+  btnGrid.onclick = function() {
+    viewMode = "grid";
+    btnGrid.classList.add("active");
+    btnList.classList.remove("active");
+    try { localStorage.setItem(LS_VIEW, "grid"); } catch(e){}
+    render();
+  };
+  btnList.onclick = function() {
+    viewMode = "list";
+    btnList.classList.add("active");
+    btnGrid.classList.remove("active");
+    try { localStorage.setItem(LS_VIEW, "list"); } catch(e){}
+    render();
+  };
+
+  var searchInput = document.getElementById("searchInput");
+  var searchClear = document.getElementById("searchClear");
+  searchInput.oninput = function() {
+    searchQuery = searchInput.value.trim();
+    searchClear.style.display = searchQuery ? "block" : "none";
+    render();
+  };
+  searchClear.onclick = function() {
+    searchInput.value = "";
+    searchQuery = "";
+    searchClear.style.display = "none";
+    render();
+    searchInput.focus();
+  };
+
+  window.onkeydown = function(e) {
+    if (e.key === "/" && document.activeElement !== searchInput && document.activeElement.tagName !== "TEXTAREA" && document.activeElement.tagName !== "INPUT") {
+      e.preventDefault();
+      searchInput.focus();
+    } else if (e.key === "Escape") {
+      if (acctModal.classList.contains("show")) acctModal.classList.remove("show");
+      else if (batchModal.classList.contains("show")) batchModal.classList.remove("show");
+      else if (vaultModal.classList.contains("show")) vaultModal.classList.remove("show");
+      else if (searchQuery) {
+        searchInput.value = "";
+        searchQuery = "";
+        searchClear.style.display = "none";
+        render();
+      }
+    }
+  };
+
+  var warnBar = document.getElementById("warnBar");
+  try {
+    if (localStorage.getItem(LS_WARN) === "1") warnBar.style.display = "none";
+  } catch(e){}
+  document.getElementById("warnClose").onclick = function() {
+    warnBar.style.display = "none";
+    try { localStorage.setItem(LS_WARN, "1"); } catch(e){}
+  };
+
+  loadData();
+  renderIcons();
+  render();
+
+  /* PWA Service Worker 注册（仅 HTTPS 在线部署时生效；本地 file:// 打开自动跳过） */
+  try {
+    if ("serviceWorker" in navigator && location.protocol === "https:") {
+      navigator.serviceWorker.register("sw.js").catch(function(){});
+    }
+  } catch (e) {}
+
+})();
+</script>
+</body>
+</html>
