@@ -1434,6 +1434,10 @@ button, .btn, .view-btn, .action-icon-btn, .tab-pill, .dropdown-item, .close-btn
           <span data-icon="layers" data-size="13"></span> 批量导入
         </button>
 
+        <button class="btn" id="btnPhoneSync" style="border-color:rgba(229,142,59,0.35);color:#e58e3b;" title="手机微信/相机扫码使用并同步密钥">
+          <span data-icon="smartphone" data-size="13"></span> 📱 手机扫码直达
+        </button>
+
         <button class="btn special" id="btnSyncVault" title="查看小金库对应文件夹并重新生成最新表格">
           <span data-icon="zap" data-size="13"></span> 导出到小金库
         </button>
@@ -1573,6 +1577,33 @@ button, .btn, .view-btn, .action-icon-btn, .tab-pill, .dropdown-item, .close-btn
 </div>
 
 <!-- 模态框：批量导入 -->
+<!-- 手机扫码与同步弹窗 -->
+<div class="modal-mask" id="phoneSyncModal">
+  <div class="modal-content" style="width:480px;text-align:center;">
+    <div class="modal-header">
+      <h3><span data-icon="smartphone" data-size="18"></span> 手机扫码直达与全量同步</h3>
+      <span class="close-btn" id="phoneSyncClose">✕</span>
+    </div>
+
+    <div style="padding:10px 0 6px;">
+      <div style="display:inline-block;padding:12px;background:#0b0c10;border:1px solid #25293a;border-radius:18px;box-shadow:0 8px 30px rgba(0,0,0,0.5);">
+        <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALoAAAC6CAIAAACWbMCmAAAD5klEQVR4nO3dMW4bMRCGUTlIZxc+xTa+Y4rcMc2eJgfYhj81Q66E98rAkQT7A6UBtdyPz6/vB4z5NfhzIBcyVhcCciEgFwK/r/90/v157HP8+Tfxekb+1/VnRtz/2ftcX7PVhYBcCMiFgFwIyIXnJqOruU/1K+eOuQnibs9+DPye9/4trC4E5EJALgTkQkAuVE9GV3OzwMpdm7nXUzX1HFM7X/f/W1hdCMiFgFwIyIWAXOifjFYa+Qw/sv/St0dzLpxN9rK6EJALAbkQkAsBufBek9FV1f7LyOOMzFNH23VGd2N1ISAXAnIhIBcCcqF/Mlr5OX9uP2jlGQjnzc5J6GN1ISAXAnIhIBcCcqF6Mtr7yX/O3D5O389czc1ue/8WVhcCciEgFwJyISAXnpuM7va9r6rXs/fc7PMtrkWyuhCQCwG5EJALAblQfT+ju90taO5n9p4ydxQ9TtVO09zf1OpCQC4E5EJALgTkwo4TGKpOfpu7YmjliQdH0QxYdU/blXOZ1YWAXAjIhYBcCMiFwMfn1/ejQtVdU6smmr5drWPr/tTKPSx7RjzFmxEBuRCQCwG5UD0Z3e0amb5ppW8f57zZjDPH6kJALgTkQkAuBORC/55R3+f8q7tNEOfWM+X2zptWFwJyISAXAnIhIBf6T2Dom1bm7N3rqdI3XV65zoh23owIyIWAXAjIhbue2r3yk/+IlafDrTxzr+rsiyurCwG5EJALAbkQkAv91xntvUfq3m+UnQvPdtj727iyuhCQCwG5EJALAblQ/W26PntPtBt59r1n3F25zoiX4c2IgFwIyIWAXKj+Nt3e+7GuvNJnxHmzWWnuueZYXQjIhYBcCMiFgFzo3zPae77Byp2mqt9Glb6TLlxnRDFvRsiFHlYXAnLhdU7tXnmFzspTu8/bT3xzrC4E5EJALgTkQkAu9O8ZrTxXbeXVQK94Mt7K2c3qQkAuBORCQC4E5EL/ntFKK/df5h5n752SVt731upCQC4E5EJALgTkwuucTXf1ilPPufB+rFW7dXOsLgTkQkAuBORCQC48Nxld7T0zrer7dXOP3HdXphF3+06g1YWAXAjIhYBcCMiF6slo5XfM5vRNT1W7NufCM+76ZjerCwG5EJALAbkQkAv9k9FeVefgVZ2BcGw99W5E1SNbXQjIhYBcCMiFgFx4r8mo71qbvnMSjq1XOfU9u9WFgFwIyIWAXAjIhefOplt5Avbe5xpR9XrOhbtaI488x+pCQC4E5EJALgTkQvWe0d7T6laepVD17H1TT9+dXp3aTTFvRgTkQkAuBOTCe93PiPuwuhCQCwG5EJALAbnwGPcfS34m4vgPrfQAAAAASUVORK5CYII=" style="width:170px;height:170px;display:block;border-radius:6px;" alt="手机扫码直达">
+        <div style="font-size:12px;color:#e58e3b;margin-top:8px;font-weight:600;">微信「扫一扫」或手机相机直达</div>
+      </div>
+
+      <div style="margin:16px 0 14px;font-size:12px;color:#94a3b8;line-height:1.7;text-align:left;background:rgba(255,255,255,0.03);padding:12px 14px;border-radius:14px;border:1px solid var(--border-subtle);">
+        <div style="color:var(--text-primary);font-weight:600;margin-bottom:6px;">📲 零麻烦两步在手机上使用：</div>
+        <div><b>1. 扫码打开并添加到桌面：</b>手机扫上方二维码打开（iPhone 用 Safari 点「分享」→「添加到主屏幕」；安卓用 Chrome 点右上角菜单「添加到主屏幕」即可成为原生 App）。</div>
+        <div style="margin-top:6px;"><b>2. 一秒同步 60 密钥：</b>点击下方按钮复制口令发给微信文件传输助手，在手机端点「粘贴导入」即可瞬间全部导入！</div>
+      </div>
+
+      <button class="btn primary" id="btnCopySyncData" style="width:100%;padding:11px;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px;">
+        <span data-icon="copy" data-size="14"></span> 复制手机同步口令（包含全量 60 密钥）
+      </button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-mask" id="batchModal">
   <div class="modal-content" style="width:680px">
     <div class="modal-header">
@@ -2571,6 +2602,33 @@ button, .btn, .view-btn, .action-icon-btn, .tab-pill, .dropdown-item, .close-btn
     var text = document.getElementById("batchInputText").value.trim();
     if (!text) return;
 
+    // 智能识别：如果是全量 JSON 备份文本，直接秒级全量导入
+    if ((text.startsWith("{") && text.endsWith("}")) || (text.indexOf('"accounts"') !== -1)) {
+      try {
+        var parsed = JSON.parse(text);
+        if (parsed.accounts && Array.isArray(parsed.accounts)) {
+          var count = 0;
+          var exist = {};
+          data.accounts.forEach(function(a){ exist[a.secret] = true; });
+          parsed.accounts.forEach(function(acc){
+            if (acc.secret && !exist[acc.secret]) {
+              data.accounts.push(acc);
+              exist[acc.secret] = true;
+              count++;
+            }
+          });
+          if (parsed.categories && Array.isArray(parsed.categories)) {
+            data.categories = parsed.categories;
+          }
+          saveData();
+          batchModal.classList.remove("show");
+          render();
+          showToast("🎉 成功同步导入 " + count + " 个密钥！");
+          return;
+        }
+      } catch(e) {}
+    }
+
     var lines = text.split(/\r?\n/);
     var added = 0;
     var existingSecrets = {};
@@ -2758,6 +2816,21 @@ button, .btn, .view-btn, .action-icon-btn, .tab-pill, .dropdown-item, .close-btn
   };
 
   var vaultModal = document.getElementById("vaultModal");
+  var phoneSyncModal = document.getElementById("phoneSyncModal");
+  var btnPhoneSync = document.getElementById("btnPhoneSync");
+  if (btnPhoneSync && phoneSyncModal) {
+    btnPhoneSync.onclick = function() { phoneSyncModal.classList.add("show"); };
+    document.getElementById("phoneSyncClose").onclick = function() { phoneSyncModal.classList.remove("show"); };
+    phoneSyncModal.onclick = function(e) { if (e.target === phoneSyncModal) phoneSyncModal.classList.remove("show"); };
+    document.getElementById("btnCopySyncData").onclick = function() {
+      navigator.clipboard.writeText(JSON.stringify(data)).then(function() {
+        showToast("✅ 同步口令已复制！发给手机微信在验证器点「粘贴导入」即可");
+      }).catch(function() {
+        showToast("请手动选中文本复制");
+      });
+    };
+  }
+
   document.getElementById("btnSyncVault").onclick = function() {
     vaultModal.classList.add("show");
   };
@@ -2804,7 +2877,8 @@ button, .btn, .view-btn, .action-icon-btn, .tab-pill, .dropdown-item, .close-btn
       e.preventDefault();
       searchInput.focus();
     } else if (e.key === "Escape") {
-      if (acctModal.classList.contains("show")) acctModal.classList.remove("show");
+      if (phoneSyncModal && phoneSyncModal.classList.contains("show")) phoneSyncModal.classList.remove("show");
+      else if (acctModal.classList.contains("show")) acctModal.classList.remove("show");
       else if (batchModal.classList.contains("show")) batchModal.classList.remove("show");
       else if (vaultModal.classList.contains("show")) vaultModal.classList.remove("show");
       else if (searchQuery) {
