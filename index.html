@@ -2935,6 +2935,13 @@ button, .btn, .view-btn, .action-icon-btn, .tab-pill, .dropdown-item, .close-btn
   } catch (e) {}
 
 })();
+
+  // 本地服务保活心跳（兼容 EXE 宿主）
+  if (location.protocol.startsWith("http")) {
+    setInterval(function() {
+      fetch("/api/ping").catch(function() {});
+    }, 4000);
+  }
 </script>
 </body>
 </html>
