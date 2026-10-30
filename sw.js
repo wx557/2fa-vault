@@ -1,5 +1,5 @@
 // 两步验证密钥管理器 · 离线缓存 Service Worker
-var CACHE = "2fa-vault-v4-turnkey";
+var CACHE = "2fa-vault-v4";
 var ASSETS = ["./", "./index.html", "./manifest.webmanifest",
               "./icon-192.png", "./icon-512.png", "./icon-180.png"];
 
@@ -18,17 +18,15 @@ self.addEventListener("activate", function (e) {
 self.addEventListener("fetch", function (e) {
   if (e.request.method !== "GET") return;
   e.respondWith(
-    fetch(e.request).then(function (res) {
-      try {
-        var cp = res.clone();
-        caches.open(CACHE).then(function (c) { c.put(e.request, cp); });
-      } catch (err) {}
-      return res;
-    }).catch(function () {
-      return caches.match(e.request, { ignoreSearch: true }).then(function (hit) {
-        if (hit) return hit;
-        return caches.match("./index.html");
-      });
+    caches.match(e.request, { ignoreSearch: true }).then(function (hit) {
+      if (hit) return hit;
+      return fetch(e.request).then(function (res) {
+        try {
+          var cp = res.clone();
+          caches.open(CACHE).then(function (c) { c.put(e.request, cp); });
+        } catch (err) {}
+        return res;
+      }).catch(function () { return caches.match("./index.html"); });
     })
   );
 });
