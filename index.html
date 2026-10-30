@@ -1983,7 +1983,11 @@ button, .btn, .view-btn, .action-icon-btn, .tab-pill, .dropdown-item, .close-btn
     var list = [];
     var map = {};
     data.accounts.forEach(function(a){ map[a.id] = a; });
-    data.order.forEach(function(id){ if (map[id]) list.push(map[id]); });
+    var seen = {};
+    if (data.order && Array.isArray(data.order)) {
+      data.order.forEach(function(id){ if (map[id]) { list.push(map[id]); seen[id] = true; } });
+    }
+    data.accounts.forEach(function(a){ if (!seen[a.id]) { list.push(a); seen[a.id] = true; } });
 
     if (activeCat !== ALL) {
       list = list.filter(function(a){ return (a.category || UNCATEGORIZED) === activeCat; });
@@ -2619,6 +2623,11 @@ button, .btn, .view-btn, .action-icon-btn, .tab-pill, .dropdown-item, .close-btn
           });
           if (parsed.categories && Array.isArray(parsed.categories)) {
             data.categories = parsed.categories;
+          }
+          if (parsed.order && Array.isArray(parsed.order)) {
+            data.order = parsed.order;
+          } else {
+            data.order = data.accounts.map(function(a){ return a.id; });
           }
           saveData();
           batchModal.classList.remove("show");
