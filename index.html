@@ -1084,12 +1084,54 @@ main {
 
 /* 空状态 Empty State */
 .empty-state {
-  text-align: center;
-  color: var(--text-muted);
-  padding: 60px 20px;
-  font-size: 14px;
-  line-height: 2;
   grid-column: 1 / -1;
+}
+.empty-inner {
+  text-align: center;
+  max-width: 460px;
+  margin: 7vh auto 0;
+  background: linear-gradient(180deg, rgba(26, 30, 44, 0.55), rgba(19, 21, 31, 0.35));
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: 44px 28px 40px;
+  box-shadow: var(--shadow-card);
+}
+.empty-icon {
+  width: 78px;
+  height: 78px;
+  margin: 0 auto 18px;
+  border-radius: 22px;
+  background: linear-gradient(135deg, rgba(229, 142, 59, 0.22), rgba(229, 142, 59, 0.04));
+  border: 1px solid rgba(229, 142, 59, 0.45);
+  box-shadow: 0 0 34px var(--accent-glow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+}
+.empty-icon.dim {
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--border-subtle);
+  box-shadow: none;
+}
+.empty-inner h3 {
+  color: var(--text-primary);
+  font-size: 17px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.empty-inner p {
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.9;
+}
+.empty-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 22px;
+  flex-wrap: wrap;
 }
 
 /* 响应式适配 Responsive */
@@ -1122,7 +1164,6 @@ html { -webkit-text-size-adjust: 100%; }
 body {
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
-  padding-bottom: calc(70px + env(safe-area-inset-bottom));
 }
 button, .btn, .view-btn, .action-icon-btn, .tab-pill, .dropdown-item, .close-btn {
   touch-action: manipulation;
@@ -1130,29 +1171,211 @@ button, .btn, .view-btn, .action-icon-btn, .tab-pill, .dropdown-item, .close-btn
   user-select: none;
 }
 @media (hover: none) {
-  .account-card:hover { transform: none; }
+  .account-card:hover, .btn:hover { transform: none; }
 }
+
+/* 移动端底部操作栏（桌面隐藏） */
+.mobile-bottom-bar { display: none; }
+
 @media (max-width: 640px) {
-  main { padding: 0 12px; margin: 12px auto; }
-  header { padding: 10px 12px 8px; }
-  .brand .logo { width: 34px; height: 34px; border-radius: 9px; }
-  .brand-text h1 { font-size: 14.5px; }
-  .sub { font-size: 10.5px; }
-  .kbd-badge { display: none; }
-  .account-card { padding: 12px 12px; gap: 10px; }
-  .code-display .code-digits { font-size: 27px; }
-  .account-row { flex-wrap: wrap; padding: 10px; gap: 8px; }
-  .row-name { min-width: 130px; flex: 1; }
-  .row-note { flex-basis: 100%; order: 9; font-size: 11px; }
-  .modal-content {
-    width: 92vw !important;
-    max-width: 92vw !important;
-    max-height: 86vh;
-    overflow-y: auto;
+  html, body {
+    overflow-x: hidden !important;
+    max-width: 100vw !important;
+    width: 100% !important;
   }
+  body { padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
+  main {
+    padding: 0 12px;
+    margin: 12px auto 10px;
+    width: 100%;
+    max-width: 100vw;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  /* —— 顶栏：紧凑 App Bar（品牌+切换一行，搜索独占一行） —— */
+  header {
+    padding: 10px 12px 8px;
+    width: 100%;
+    max-width: 100vw;
+    box-sizing: border-box;
+  }
+  .hdr-container {
+    gap: 9px;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+  .hdr-top-row {
+    flex-wrap: wrap;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+  .hdr-top-right { display: contents; }
+  .brand { order: 1; min-width: 0; flex: 1; overflow: hidden; }
+  .btn-group { order: 2; margin-left: auto; flex-shrink: 0; }
+  .view-btn { padding: 5px 8px; font-size: 11px; }
+  .search-wrap { order: 3; flex-basis: 100%; width: 100%; min-width: 0; }
+  .brand .logo { width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0; }
+  .brand-text { min-width: 0; flex: 1; overflow: hidden; }
+  .brand-text h1 { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 0; }
+  .brand-text h1 .badge { font-size: 8px; padding: 1px 4px; }
+  .brand-text .sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 9.5px; }
+  .brand-text .sub > span:nth-child(2) { display: none; }  /* 手机端隐藏冗长标语，仅留密钥计数 */
+  .sub { font-size: 9.5px; }
+  .kbd-badge { display: none; }
+
+  /* —— 分类：单行横向滑动 —— */
+  .hdr-bottom-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    border-top: none;
+    padding-top: 0;
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+  }
+  .tabs-list {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    margin: 0;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    padding: 2px 0 4px;
+    gap: 6px;
+  }
+  .tabs-list::-webkit-scrollbar { display: none; }
+  .tab-pill { flex-shrink: 0; padding: 5px 11px; font-size: 11.5px; }
+  .action-bar { display: none; }
+
+  /* —— 网格容器与卡片 —— */
+  #cardsContainer.grid-mode {
+    grid-template-columns: 1fr !important;
+    gap: 12px;
+    width: 100%;
+    min-width: 0;
+  }
+  .account-card {
+    padding: 12px 14px;
+    gap: 10px;
+    border-radius: 14px;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+  .card-header {
+    width: 100%;
+    min-width: 0;
+    gap: 6px;
+  }
+  .account-title {
+    font-size: 12.5px;
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .category-select {
+    max-width: 95px;
+    flex-shrink: 0;
+    font-size: 11px;
+    padding: 3px 6px;
+  }
+  .code-display .code-digits { font-size: 28px; letter-spacing: 1px; }
+  .account-row { flex-wrap: wrap; padding: 11px 12px; gap: 8px; border-radius: 14px; width: 100%; box-sizing: border-box; }
+  .row-name { min-width: 110px; flex: 1; }
+  .row-note { flex-basis: 100%; order: 9; font-size: 11px; }
+
+  /* —— 弹窗：底部抽屉样式 —— */
+  .modal-mask { align-items: flex-end; padding: 0; }
+  .modal-content {
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 88vh;
+    overflow-y: auto;
+    border-radius: 18px 18px 0 0;
+    border-bottom: none;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom));
+    animation: sheet-up 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  @keyframes sheet-up {
+    from { transform: translateY(48px); opacity: 0.4; }
+    to { transform: none; opacity: 1; }
+  }
+
+  /* —— 更多菜单 → 底部弹层 —— */
+  .dropdown-menu {
+    position: fixed !important;
+    top: auto !important;
+    left: 10px !important;
+    right: 10px !important;
+    bottom: calc(80px + env(safe-area-inset-bottom)) !important;
+    width: auto !important;
+    border-radius: 16px;
+    box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.6);
+  }
+
+  /* —— 警告条 / 空状态 / Toast —— */
+  .warn-bar { font-size: 11px; padding: 9px 12px; line-height: 1.6; }
+  .empty-inner { margin-top: 4vh; padding: 36px 22px 32px; }
+  .toast-tip { bottom: calc(88px + env(safe-area-inset-bottom)); }
+
   /* iOS：输入框字号 ≥16px 防聚焦自动放大 */
   input[type="text"], textarea, select { font-size: 16px; }
-  .warn-bar { font-size: 11.5px; padding: 10px 12px; }
+
+  /* —— 底部操作栏 —— */
+  .mobile-bottom-bar {
+    display: flex;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 90;
+    gap: 8px;
+    background: rgba(13, 14, 20, 0.92);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border-top: 1px solid var(--border-subtle);
+    box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.5);
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+  }
+  .bar-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    background: transparent;
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-family: inherit;
+    font-weight: 500;
+    padding: 8px 0 7px;
+    cursor: pointer;
+    transition: var(--transition);
+  }
+  .bar-btn:active { background: rgba(255, 255, 255, 0.06); color: var(--text-primary); }
+  .bar-btn.accent {
+    background: linear-gradient(135deg, #f59e0b, #e58e3b);
+    border-color: #f59e0b;
+    color: #0c0d12;
+    font-weight: 700;
+    box-shadow: 0 4px 14px rgba(229, 142, 59, 0.35);
+  }
 }
 </style>
 </head>
@@ -1261,7 +1484,20 @@ button, .btn, .view-btn, .action-icon-btn, .tab-pill, .dropdown-item, .close-btn
   </div>
 
   <div class="empty-state" id="emptyState" style="display:none">
-    没有匹配的密钥，尝试切换分类或搜索其他关键词。
+    <div class="empty-inner" id="emptyNoKeys">
+      <div class="empty-icon"><span data-icon="shield-check" data-size="36"></span></div>
+      <h3>这台设备还没有密钥</h3>
+      <p>导入小金库的全量备份，或粘贴 otpauth 链接，<br>30 秒即可在这台设备就绪。密钥只存本机、离线算码。</p>
+      <div class="empty-actions">
+        <button class="btn primary" id="emptyImportBtn"><span data-icon="upload" data-size="14"></span> 导入备份 JSON</button>
+        <button class="btn" id="emptyPasteBtn"><span data-icon="layers" data-size="14"></span> 粘贴导入</button>
+      </div>
+    </div>
+    <div class="empty-inner" id="emptyNoMatch" style="display:none">
+      <div class="empty-icon dim"><span data-icon="search" data-size="36"></span></div>
+      <h3>没有匹配的密钥</h3>
+      <p>换个关键词，或切换上方分类再试试。</p>
+    </div>
   </div>
 </main>
 
@@ -1397,6 +1633,13 @@ button, .btn, .view-btn, .action-icon-btn, .tab-pill, .dropdown-item, .close-btn
   </div>
 </div>
 
+<!-- 移动端底部操作栏（仅 ≤640px 显示） -->
+<nav class="mobile-bottom-bar" id="mobileBar">
+  <button class="bar-btn accent" id="mBtnAdd"><span data-icon="plus" data-size="18"></span><span>添加密钥</span></button>
+  <button class="bar-btn" id="mBtnBatch"><span data-icon="upload" data-size="18"></span><span>导入</span></button>
+  <button class="bar-btn" id="mBtnMore"><span data-icon="more-h" data-size="18"></span><span>更多</span></button>
+</nav>
+
 <script>
 (function(){
   "use strict";
@@ -1443,7 +1686,8 @@ button, .btn, .view-btn, .action-icon-btn, .tab-pill, .dropdown-item, .close-btn
     "zap": '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
     "grid": '<rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/>',
     "list": '<line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/>',
-    "rotate-ccw": '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>'
+    "rotate-ccw": '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>',
+    "more-h": '<circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/>'
   };
 
   function icon(name, size, cls) {
@@ -2110,9 +2354,9 @@ button, .btn, .view-btn, .action-icon-btn, .tab-pill, .dropdown-item, .close-btn
     var empty = document.getElementById("emptyState");
 
     if (!accounts.length) {
-      empty.textContent = data.accounts.length === 0
-        ? "当前设备还没有任何密钥。点击顶部「更多操作 → 导入/恢复备份」，选择 两步验证全量备份_portable.json 即可一键导入全部密钥；也可用「批量导入」粘贴 otpauth:// 链接。"
-        : "没有匹配的密钥，尝试切换分类或搜索其他关键词。";
+      var noKeys = data.accounts.length === 0;
+      document.getElementById("emptyNoKeys").style.display = noKeys ? "block" : "none";
+      document.getElementById("emptyNoMatch").style.display = noKeys ? "none" : "block";
       empty.style.display = "block";
       return;
     }
@@ -2584,6 +2828,21 @@ button, .btn, .view-btn, .action-icon-btn, .tab-pill, .dropdown-item, .close-btn
   loadData();
   renderIcons();
   render();
+
+  /* 移动端底部操作栏与空库引导按钮接线（复用桌面端既有逻辑） */
+  function wireShortcut(id, targetId) {
+    var el = document.getElementById(id);
+    var target = document.getElementById(targetId);
+    if (el && target) el.onclick = function() { target.click(); };
+  }
+  wireShortcut("mBtnAdd", "btnAdd");
+  wireShortcut("mBtnBatch", "btnBatch");
+  wireShortcut("emptyImportBtn", "backupFileInput");
+  wireShortcut("emptyPasteBtn", "btnBatch");
+  (function() {
+    var m = document.getElementById("mBtnMore");
+    if (m) m.onclick = function(e) { e.stopPropagation(); moreDropdown.classList.toggle("show"); };
+  })();
 
   /* PWA Service Worker 注册（仅 HTTPS 在线部署时生效；本地 file:// 打开自动跳过） */
   try {
