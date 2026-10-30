@@ -1,5 +1,5 @@
 // 两步验证密钥管理器 · 离线缓存 Service Worker
-var CACHE = "2fa-vault-v4";
+var CACHE = "2fa-vault-v5";
 var ASSETS = ["./", "./index.html", "./manifest.webmanifest",
               "./icon-192.png", "./icon-512.png", "./icon-180.png"];
 
