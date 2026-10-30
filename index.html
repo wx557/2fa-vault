@@ -1370,6 +1370,9 @@ window.__CIPHER_NONCE__ = "2favault_iv_";
 
 
 
+
+
+
 <header>
   <div class="hdr-container">
     <div class="hdr-top-row">
@@ -1785,28 +1788,51 @@ window.__CIPHER_NONCE__ = "2favault_iv_";
     return u;
   }
   async function pkAssert(saltBytes) {
+    var ctrl = new AbortController();
+    var timer = setTimeout(function() { ctrl.abort(); }, 8000);
     var opts = {
       publicKey: {
         challenge: crypto.getRandomValues(new Uint8Array(32)),
         rpId: location.hostname,
         userVerification: "required",
-        timeout: 60000
+        timeout: 8000
       }
     };
     if (saltBytes) opts.publicKey.extensions = { prf: { eval: { first: saltBytes } } };
-    var assertion = await navigator.credentials.get(opts);
-    var ext = null;
-    try { ext = assertion.getClientExtensionResults(); } catch (e) {}
-    if (saltBytes && ext && ext.prf && ext.prf.results && ext.prf.results.first) {
-      var km = await crypto.subtle.importKey("raw", ext.prf.results.first, "PBKDF2", false, ["deriveKey"]);
-      return {
-        mode: "prf",
-        key: await crypto.subtle.deriveKey(
-          { name: "PBKDF2", salt: new Uint8Array(16), iterations: 200000, hash: "SHA-256" },
-          km, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"])
-      };
-    }
-    return { mode: "gate", key: null };
+    opts.signal = ctrl.signal;
+    try {
+      var assertion = await navigator.credentials.get(opts);
+      var ext = null;
+      try { ext = assertion.getClientExtensionResults(); } catch (e) {}
+      if (saltBytes && ext && ext.prf && ext.prf.results && ext.prf.results.first) {
+        var km = await crypto.subtle.importKey("raw", ext.prf.results.first, "PBKDF2", false, ["deriveKey"]);
+        return {
+          mode: "prf",
+          key: await crypto.subtle.deriveKey(
+            { name: "PBKDF2", salt: new Uint8Array(16), iterations: 200000, hash: "SHA-256" },
+            km, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"])
+        };
+      }
+      return { mode: "gate", key: null };
+    } finally { clearTimeout(timer); }
+  }
+  async function pkCreate() {
+    var ctrl = new AbortController();
+    var timer = setTimeout(function() { ctrl.abort(); }, 10000);
+    try {
+      return await navigator.credentials.create({
+        signal: ctrl.signal,
+        publicKey: {
+          challenge: crypto.getRandomValues(new Uint8Array(32)),
+          rp: { name: "两步验证金库", id: location.hostname },
+          user: { id: crypto.getRandomValues(new Uint8Array(16)), name: "local-vault", displayName: "本地验证器通行证" },
+          pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
+          authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required", residentKey: "preferred" },
+          extensions: { prf: {} },
+          timeout: 10000
+        }
+      });
+    } finally { clearTimeout(timer); }
   }
   async function pkEncryptData(key, obj) {
     var iv = crypto.getRandomValues(new Uint8Array(12));
@@ -1837,24 +1863,27 @@ window.__CIPHER_NONCE__ = "2favault_iv_";
   }
   function pkBusy(busy) {
     var btn = pkEl("pkUnlockBtn");
-    if (btn) { btn.disabled = busy; btn.textContent = busy ? "请完成身份验证…" : btn.dataset.label || btn.textContent; if (!busy) { btn.textContent = btn.dataset.label; } }
+    if (btn) btn.disabled = busy;
   }
+  (function pkBind() {
+    var btn = document.getElementById("pkUnlockBtn");
+    var em = document.getElementById("pkEmergency");
+    if (btn) {
+      btn.onclick = function() {
+        btn.disabled = true;
+        var done = function() { btn.disabled = false; };
+        if (!pkRec()) pkSetupFlow().then(done, done);
+        else pkUnlockFlow().then(done, done);
+      };
+    }
+    if (em) em.onclick = pkEmergencyRestore;
+  })();
   async function pkSetupFlow() {
     var st = pkEl("pkStatus");
     try {
-      st.textContent = "等待 Windows Hello 验证…";
+      st.textContent = "正在调用 Windows Hello…（若此窗口无响应将自动降级）";
       var salt = crypto.getRandomValues(new Uint8Array(32));
-      var cred = await navigator.credentials.create({
-        publicKey: {
-          challenge: crypto.getRandomValues(new Uint8Array(32)),
-          rp: { name: "两步验证金库", id: location.hostname },
-          user: { id: crypto.getRandomValues(new Uint8Array(16)), name: "local-vault", displayName: "本地验证器通行证" },
-          pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
-          authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required", residentKey: "preferred" },
-          extensions: { prf: {} },
-          timeout: 60000
-        }
-      });
+      var cred = await pkCreate();
       st.textContent = "正在派生加密密钥…";
       var r = await pkAssert(salt);
       pk.mode = r.mode;
@@ -1877,7 +1906,12 @@ window.__CIPHER_NONCE__ = "2favault_iv_";
       render();
       showToast(r.mode === "prf" ? "通行证密钥已设置（加密增强模式）" : "通行证已设置（门禁模式）");
     } catch (e) {
-      st.textContent = e.name === "NotAllowedError" ? "已取消或超时，可重试。" : "设置失败：" + e.message;
+      /* 任何失败都不允许卡死：自动降级为直开模式 */
+      pkHideLock();
+      render();
+      showToast(e.name === "NotAllowedError" || e.name === "AbortError"
+        ? "当前浏览器窗口不支持通行证弹窗，已直接打开（双击桌面图标用 Edge 可启用通行证）"
+        : "通行证设置失败，已直接打开：" + e.message);
     }
   }
   async function pkUnlockFlow() {
@@ -1885,7 +1919,7 @@ window.__CIPHER_NONCE__ = "2favault_iv_";
     var rec = pkRec();
     if (!rec) { pkShowLock({ setup: true }); return; }
     try {
-      st.textContent = "等待 Windows Hello 验证…";
+      st.textContent = "正在调用 Windows Hello…";
       var r = await pkAssert(rec.mode === "prf" ? b64uDec(rec.salt) : null);
       if (r.mode === "prf") {
         pk.mode = "prf"; pk.key = r.key; pk.active = true;
@@ -1907,7 +1941,14 @@ window.__CIPHER_NONCE__ = "2favault_iv_";
       render();
       showToast("已通过通行证解锁");
     } catch (e) {
-      st.textContent = e.name === "NotAllowedError" ? "已取消或超时，请重试。" : "解锁失败：" + e.message;
+      /* 失败自动走明文副本兜底，绝不锁死 */
+      pk.active = false;
+      loadData();
+      pkHideLock();
+      render();
+      showToast(e.name === "NotAllowedError" || e.name === "AbortError"
+        ? "此窗口弹不出通行证，已用本地副本直接打开"
+        : "解锁失败，已用本地副本打开：" + e.message);
     }
   }
   function pkEmergencyRestore() {
@@ -1930,19 +1971,6 @@ window.__CIPHER_NONCE__ = "2favault_iv_";
     pk.active = false;
     pkShowLock({ setup: false });
   }
-  (function pkBind() {
-    var btn = document.getElementById("pkUnlockBtn");
-    var em = document.getElementById("pkEmergency");
-    if (btn) {
-      btn.dataset.label = btn.textContent;
-      btn.onclick = function() {
-        btn.dataset.label = btn.textContent.indexOf("设置") === 0 ? "设置通行证密钥" : "使用通行证解锁";
-        if (!pkRec()) pkSetupFlow(); else pkUnlockFlow();
-      };
-    }
-    if (em) em.onclick = pkEmergencyRestore;
-  })();
-
   function cleanSecret(s) {
     return (s || "").replace(/[\s\-_]/g, "").toUpperCase();
   }
